@@ -152,7 +152,7 @@ char notify_NotificationClosed(unsigned int nid, unsigned int reason)
 
 	DEBUG("NotificationClosed(%d, %d)\n", nid, reason);
 
-	notify_close_msg = dbus_message_new_signal("/why/is/OOP/part/of/the/protocol", "org.freedesktop.Notifications", "NotificationClosed");
+	notify_close_msg = dbus_message_new_signal("/org/freedesktop/Notifications", "org.freedesktop.Notifications", "NotificationClosed");
 	if( notify_close_msg == NULL )
 		return 0;
 
@@ -252,16 +252,6 @@ char notify_Notify(DBusMessage *msg) {
 			ptr->next=note;
 		}
 	}
-
-	reply = dbus_message_new_method_return(msg);
-
-	dbus_message_iter_init_append(reply, &args);
-	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &(note->nid)) ||
-	!dbus_connection_send(dbus_conn, reply, &serial))
-	{
-		return 1;
-	}
-	dbus_message_unref(reply);
 	
         char buffer[2048];
         if(!strlen(note->body))
@@ -280,6 +270,16 @@ char notify_Notify(DBusMessage *msg) {
                 }
         }
         system( buffer );
+
+	reply = dbus_message_new_method_return(msg);
+
+	dbus_message_iter_init_append(reply, &args);
+	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &(note->nid)) ||
+	!dbus_connection_send(dbus_conn, reply, &serial))
+	{
+		return 1;
+	}
+	dbus_message_unref(reply);
 
 	DEBUG("   Notification %d created.\n", note->nid);
 	return 1;
