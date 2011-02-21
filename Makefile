@@ -10,3 +10,6 @@ clean:
 install:
 	cp cow-notify /usr/local/bin/
 	chmod +x /usr/local/bin/cow-notify
+
+uninstall:
+	rm /usr/local/bin/cow-notify
