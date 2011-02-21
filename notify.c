@@ -144,29 +144,30 @@ char notify_check() {
 //   org.freedesktop.Notifications.NotificationClosed -> (nid, reason )
 //     whenever notification is closed(reason=3) or expires(reason=1)
 
-char notify_NotificationClosed(unsigned int nid, unsigned int reason) {
-   DBusMessageIter args;
-	 DBusMessage* notify_close_msg;
-   serial++;
+char notify_NotificationClosed(unsigned int nid, unsigned int reason)
+{
+	DBusMessageIter args;
+	DBusMessage* notify_close_msg;
+	serial++;
 
-	 DEBUG("NotificationClosed(%d, %d)\n", nid, reason);
+	DEBUG("NotificationClosed(%d, %d)\n", nid, reason);
 
-   notify_close_msg = dbus_message_new_signal("/why/is/OOP/part/of/the/protocol",
-                          "org.freedesktop.Notifications", "NotificationClosed");
-	 if( notify_close_msg == NULL )
-		 return 0;
+	notify_close_msg = dbus_message_new_signal("/why/is/OOP/part/of/the/protocol", "org.freedesktop.Notifications", "NotificationClosed");
+	if( notify_close_msg == NULL )
+		return 0;
 
-   dbus_message_iter_init_append(notify_close_msg, &args);
-   if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &nid) ||
-       !dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &reason) ||
-       !dbus_connection_send(dbus_conn, notify_close_msg, &serial)) {
-		 dbus_message_unref(notify_close_msg);
-		 return 0;
-   }
-	 dbus_message_unref(notify_close_msg);
-	 
-	 DEBUG("   Signal emitted\n");
-	 return 1;
+	dbus_message_iter_init_append(notify_close_msg, &args);
+	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &nid) ||
+	!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &reason) ||
+	!dbus_connection_send(dbus_conn, notify_close_msg, &serial))
+	{
+		dbus_message_unref(notify_close_msg);
+		return 0;
+	}
+	dbus_message_unref(notify_close_msg);
+
+	DEBUG("   Signal emitted\n");
+	return 1;
 }
 
 //	since most libnotify clients dont respect my capabilities, this
@@ -263,13 +264,13 @@ char notify_Notify(DBusMessage *msg) {
 	dbus_message_unref(reply);
 	
         char buffer[2048];
-        if(!note->body)
+        if(!strlen(note->body))
         {
                 sprintf( buffer, "%s \"%s\" &", command, note->summary ? note->summary : "");
         }
         else
         {
-                if(!note->summary)
+                if(!strlen(note->summary))
                 {
                         sprintf( buffer, "%s \"%s\" &", command, note->body ? note->body : "");
                 }
@@ -351,7 +352,7 @@ char notify_GetServerInformation(DBusMessage *msg) {
 	DBusMessage* reply;
 	DBusMessageIter args;
 	
-	char* info[4] = {"cow-notify", "cow-notify", "0.1", "0.1"};
+	char* info[4] = {"cow-notify", "cow-notify", "0.1", "1.0"};
 	serial++;
 
 	printf("GetServerInfo called!\n");
