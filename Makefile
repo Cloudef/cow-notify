@@ -8,8 +8,8 @@ clean:
 	rm cow-notify
 
 install:
-	cp cow-notify /usr/local/bin/
-	chmod +x /usr/local/bin/cow-notify
+	cp cow-notify /usr/bin/
+	chmod +x /usr/bin/cow-notify
 
 uninstall:
-	rm /usr/local/bin/cow-notify
+	rm /usr/bin/cow-notify
