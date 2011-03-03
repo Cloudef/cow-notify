@@ -24,9 +24,9 @@ int main(int argc, char **argv)
 		fprintf(stderr, "debugging enabled.\n");
 	}
 
-	if( !notify_init(DEBUGGING) ) {
+	while ( !notify_init(DEBUGGING) ) {
 		fprintf(stderr, "cannot bind notifications\n");
-		return 1;
+		sleep(1);
 	}
 
 	while ( 1 )

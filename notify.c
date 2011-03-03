@@ -253,7 +253,7 @@ char notify_Notify(DBusMessage *msg) {
 		}
 	}
 	
-        char buffer[2048];
+        char buffer[ 256 + 64 ];
         if(!strlen(note->body))
         {
                 sprintf( buffer, "%s \"%s\" &", command, note->summary ? note->summary : "");
@@ -333,6 +333,10 @@ char notify_GetCapabilities(DBusMessage *msg) {
 	printf("GetCapabilities called!\n");
 
 	reply = dbus_message_new_method_return(msg);
+	if(!reply)
+	{
+		return 0;
+	}
 
 	dbus_message_iter_init_append(reply, &args);
 	if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, NULL, &subargs ) ||
@@ -344,6 +348,7 @@ char notify_GetCapabilities(DBusMessage *msg) {
 	}
 
 	dbus_message_unref(reply);
+	
 	return 0;
 }
 
