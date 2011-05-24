@@ -8,7 +8,6 @@
 #include <time.h>
 
 #include <pwd.h>
-#include <stdlib.h>
 #include <linux/limits.h>
 
 #include "notify.h"
@@ -29,7 +28,7 @@ char notify_CloseNotification(DBusMessage *msg);
 char notify_NotificationClosed(unsigned int nid, unsigned int reason);
 
 // Command from file
-char command[256];
+char command[LINE_MAX];
 
 char notify_init(char debug_enabled) {
 	DBusError dbus_err;
@@ -56,14 +55,14 @@ char notify_init(char debug_enabled) {
         }
         
         char filename[PATH_MAX];
-        sprintf( filename, "%s/cow-notify/config", config );
+        snprintf( filename, PATH_MAX, "%s/cow-notify/config", config );
         sprintf( command, "xcowsay" );
         
         FILE* fp;
         fp = fopen(filename, "r");
         if(fp)
         {
-                fgets( command, 256, fp );
+                fgets( command, LINE_MAX, fp );
                 fclose(fp);
         }
 
@@ -338,7 +337,7 @@ char notify_GetCapabilities(DBusMessage *msg) {
 		return 0;
 	}
 
-	dbus_message_iter_init_append(reply, &args);
+	dbus_message_iter_init_append(reply, &args);	
 	if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, NULL, &subargs ) ||
 			 !dbus_message_iter_append_fixed_array(&subargs, DBUS_TYPE_STRING, &ptr, ncaps) ||
 			 !dbus_message_iter_close_container(&args, &subargs) ||
