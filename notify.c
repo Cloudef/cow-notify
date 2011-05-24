@@ -252,20 +252,20 @@ char notify_Notify(DBusMessage *msg) {
 		}
 	}
 	
-        char buffer[ 256 + 64 ];
+        char buffer[ LINE_MAX ];
         if(!strlen(note->body))
         {
-                sprintf( buffer, "%s \"%s\" &", command, note->summary ? note->summary : "");
+                snprintf( buffer, LINE_MAX, "%s \"%s\" &", command, note->summary ? note->summary : "");
         }
         else
         {
                 if(!strlen(note->summary))
                 {
-                        sprintf( buffer, "%s \"%s\" &", command, note->body ? note->body : "");
+                        snprintf( buffer, LINE_MAX, "%s \"%s\" &", command, note->body ? note->body : "");
                 }
                 else
                 {
-                        sprintf( buffer, "%s \"<%s> %s\" &", command, note->summary ? note->summary : "", note->body ? note->body : "");
+                        snprintf( buffer, LINE_MAX, "%s \"<%s> %s\" &", command, note->summary ? note->summary : "", note->body ? note->body : "");
                 }
         }
         system( buffer );
