@@ -8,7 +8,7 @@
 #include <time.h>
 
 #include <pwd.h>
-#include <linux/limits.h>
+#include <limits.h>
 
 #include "notify.h"
 
@@ -191,6 +191,28 @@ void _strip_body(char *text) {
 	text[i]=0;
 }
 
+ /* precondition: s!=0, old!=0, new!=0 */
+char *str_replace(const char *s, const char *old, const char *new)
+{
+  size_t slen = strlen(s)+1;
+  char *cout = malloc(slen), *p=cout;
+  if( !p )
+    return 0;
+  while( *s )
+    if( !strncmp(s, old, strlen(old)) )
+    {
+      p  -= cout;
+      cout= realloc(cout, slen += strlen(new)-strlen(old) );
+      p  += strlen( strcpy(p=cout+(int)p, new) );
+      s  += strlen(old);
+    }
+    else
+     *p++=*s++;
+
+  *p=0;
+  return cout;
+}
+
 // Notify
 char notify_Notify(DBusMessage *msg) {
 	DBusMessage* reply;
@@ -251,24 +273,42 @@ char notify_Notify(DBusMessage *msg) {
 			ptr->next=note;
 		}
 	}
-	
-        char buffer[ LINE_MAX ];
-        if(!strlen(note->body))
-        {
-                snprintf( buffer, LINE_MAX, "%s \"%s\" &", command, note->summary ? note->summary : "");
-        }
+        
+        puts(command);
+        char *tmp = NULL, *parsed = NULL;
+        tmp = str_replace( command, "[summary]", note->summary ? note->summary : "" );
+        if(tmp) puts(tmp);
+        if(!tmp)
+         parsed = str_replace( command, "[body]", note->body ? note->body : "" );
         else
         {
-                if(!strlen(note->summary))
-                {
-                        snprintf( buffer, LINE_MAX, "%s \"%s\" &", command, note->body ? note->body : "");
-                }
-                else
-                {
-                        snprintf( buffer, LINE_MAX, "%s \"<%s> %s\" &", command, note->summary ? note->summary : "", note->body ? note->body : "");
-                }
+         parsed = str_replace( tmp, "[body]", note->body ? note->body : "" ); 
+         if(parsed)
+            free(tmp);
+         else
+            parsed = tmp;
         }
-        system( buffer );
+
+        if(parsed)
+        {
+           char expireTime[LINE_MAX];
+           int mult = 1000;
+           sprintf(expireTime, "%d", ( strlen( note->body ? note->body : "" ) + strlen( note->summary ? note->summary : "" ) ) * mult );
+           tmp = str_replace( parsed, "[expire]", expireTime );
+           if(tmp)
+           {
+              free(parsed);
+              parsed = tmp;
+           }
+        }
+
+        if(!parsed)
+           parsed = strdup(command);
+        
+
+        puts(parsed);
+        system( parsed );
+        free(parsed);
 
 	reply = dbus_message_new_method_return(msg);
 
