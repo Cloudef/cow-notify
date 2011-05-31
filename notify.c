@@ -56,7 +56,7 @@ char notify_init(char debug_enabled) {
         
         char filename[PATH_MAX];
         snprintf( filename, PATH_MAX, "%s/cow-notify/config", config );
-        sprintf( command, "xcowsay" );
+        sprintf( command, "xcowsay <[summary]> [body]" );
         
         FILE* fp;
         fp = fopen(filename, "r");
