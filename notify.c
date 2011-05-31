@@ -30,6 +30,28 @@ char notify_NotificationClosed(unsigned int nid, unsigned int reason);
 // Command from file
 static char command[LINE_MAX];
 
+static void read_command(void)
+{
+   const char* config = getenv("XDG_CONFIG_HOME");
+   if(!config)
+   {
+      struct passwd *pw = getpwuid(getuid());
+      config = pw->pw_dir;
+   }
+     
+   char filename[PATH_MAX];
+   snprintf( filename, PATH_MAX, "%s/%s/%s", config, CFG_DIR, CFG_FIL );
+   sprintf( command, DEFAULT_CMD );
+     
+   FILE* fp;
+   fp = fopen(filename, "r");
+   if(fp)
+   {
+      fgets( command, LINE_MAX, fp );
+      fclose(fp);
+   }     
+}
+
 char notify_init(char debug_enabled) {
    DBusError dbus_err;
    int ret;
@@ -47,24 +69,7 @@ char notify_init(char debug_enabled) {
 
    DEBUGGING=debug_enabled;
    
-     const char* config = getenv("XDG_CONFIG_HOME");
-     if(!config)
-     {
-             struct passwd *pw = getpwuid(getuid());
-             config = pw->pw_dir;
-     }
-     
-     char filename[PATH_MAX];
-     snprintf( filename, PATH_MAX, "%s/cow-notify/config", config );
-     sprintf( command, "xcowsay <[summary]> [body]" );
-     
-     FILE* fp;
-     fp = fopen(filename, "r");
-     if(fp)
-     {
-             fgets( command, LINE_MAX, fp );
-             fclose(fp);
-     }
+   read_command();
 
    dbus_error_free(&dbus_err);
    return 1;
@@ -213,6 +218,44 @@ char *str_replace(const char *s, const char *old, const char *new)
   return cout;
 }
 
+static void run_command( notification *note )
+{
+   DEBUG(command);
+   char *tmp = NULL, *parsed = NULL;
+   tmp = str_replace( command, "[summary]", note->summary ? note->summary : "" );
+   if(!tmp)
+      parsed = str_replace( command, "[body]", note->body ? note->body : "" );
+   else
+   {
+      DEBUG(tmp);
+      parsed = str_replace( tmp, "[body]", note->body ? note->body : "" ); 
+      if(parsed)
+         free(tmp);
+      else
+         parsed = tmp;
+   }
+
+   if(parsed)
+   {
+     char expireTime[LINE_MAX];
+     sprintf(expireTime, "%d", note->expires_after ? note->expires_after : EXPIRE_DEFAULT);
+     tmp = str_replace( parsed, "[expire]", expireTime );
+     if(tmp)
+     {
+        DEBUG(tmp);
+        free(parsed);
+        parsed = tmp;
+     }
+   }
+
+   if(!parsed)
+      parsed = strdup(command);
+  
+  DEBUG(parsed);
+  system( parsed );
+  free(parsed);    
+}
+
 // Notify
 char notify_Notify(DBusMessage *msg) {
    DBusMessage* reply;
@@ -243,73 +286,39 @@ char notify_Notify(DBusMessage *msg) {
 
    DEBUG("Notify('%s', %u, -, '%s', '%s', -, -, %d)\n",appname, nid, summary, body, expires);
 
-      if( nid!=0 ) { // update existing message
-         note = messages;
-         if( note!=NULL )
-            while( note->nid != nid && note->next!=NULL ) note=note->next;
+   if( nid!=0 ) { // update existing message
+      note = messages;
+      if( note!=NULL )
+         while( note->nid != nid && note->next!=NULL ) note=note->next;
 
-         if( note==NULL || note->nid!=nid ) { // not found, re-create
-            note = calloc(sizeof(notification), 1);
-            note->nid=nid;
-            nid=0;
-         }
-      } else {
+      if( note==NULL || note->nid!=nid ) { // not found, re-create
          note = calloc(sizeof(notification), 1);
-         note->nid=curNid++;
-         note->started_at = time(NULL);
+         note->nid=nid;
+         nid=0;
+       }
+   } else {
+       note = calloc(sizeof(notification), 1);
+       note->nid=curNid++;
+       note->started_at = time(NULL);
+   }
+   
+   note->expires_after = (time_t)(expires<0?EXPIRE_DEFAULT:expires*EXPIRE_MULT);
+   note->closed=0;
+   strncpy( note->appname, appname, 20);
+   strncpy( note->summary, summary, 64);
+   strncpy( note->body,    body, 256);
+   _strip_body(note->body);
+   DEBUG("   body stripped to: '%s'\n", note->body);
+
+   if( nid==0 ) {
+      if( ptr==NULL ) messages=note;
+      else {
+         while( ptr->next != NULL ) ptr=ptr->next;
+            ptr->next=note;
       }
-      note->expires_after = (time_t)(expires<0?EXPIRE_DEFAULT:expires*EXPIRE_MULT);
-      note->closed=0;
-      strncpy( note->appname, appname, 20);
-      strncpy( note->summary, summary, 64);
-      strncpy( note->body,    body, 256);
-      _strip_body(note->body);
-      DEBUG("   body stripped to: '%s'\n", note->body);
-
-         if( nid==0 ) {
-            if( ptr==NULL ) messages=note;
-            else {
-               while( ptr->next != NULL ) ptr=ptr->next;
-               ptr->next=note;
-            }
-         }
+   }
         
-        puts(command);
-        char *tmp = NULL, *parsed = NULL;
-        tmp = str_replace( command, "[summary]", note->summary ? note->summary : "" );
-        if(tmp) puts(tmp);
-        if(!tmp)
-         parsed = str_replace( command, "[body]", note->body ? note->body : "" );
-        else
-        {
-         parsed = str_replace( tmp, "[body]", note->body ? note->body : "" ); 
-         if(parsed)
-            free(tmp);
-         else
-            parsed = tmp;
-        }
-
-        if(parsed)
-        {
-           char expireTime[LINE_MAX];
-           sprintf(expireTime, "%d", note->expires_after ? note->expires_after : EXPIRE_DEFAULT);
-           tmp = str_replace( parsed, "[expire]", expireTime );
-           if(tmp)
-           {
-              puts(tmp);
-              free(parsed);
-              parsed = tmp;
-           }
-        }
-
-        if(!parsed)
-           parsed = strdup(command);
-        
-
-        puts(parsed);
-        system( parsed );
-        free(parsed);
-
+   run_command( note );
    reply = dbus_message_new_method_return(msg);
 
    dbus_message_iter_init_append(reply, &args);

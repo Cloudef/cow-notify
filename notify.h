@@ -1,11 +1,20 @@
 #include <dbus/dbus.h>
 
 // default message delay in seconds
-#define EXPIRE_DEFAULT 10
+#define EXPIRE_DEFAULT  10
 
 // multiply requested delay by this
 // (slow it down since only one line)
-#define EXPIRE_MULT    2
+#define EXPIRE_MULT     2
+
+// default command
+#define DEFAULT_CMD     "xcowsay <[summary]> [body]"
+
+// config dir
+#define CFG_DIR         "cow-notify"
+
+// config file
+#define CFG_FIL         "config"
 
 typedef struct _notification {
 	dbus_uint32_t nid;
