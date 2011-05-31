@@ -238,7 +238,7 @@ static void run_command( notification *note )
    if(parsed)
    {
      char expireTime[LINE_MAX];
-     sprintf(expireTime, "%d", note->expires_after ? note->expires_after : EXPIRE_DEFAULT);
+     sprintf(expireTime, "%d", (int)note->expires_after ? (int)note->expires_after : (int)EXPIRE_DEFAULT);
      tmp = str_replace( parsed, "[expire]", expireTime );
      if(tmp)
      {
