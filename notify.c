@@ -28,97 +28,97 @@ char notify_CloseNotification(DBusMessage *msg);
 char notify_NotificationClosed(unsigned int nid, unsigned int reason);
 
 // Command from file
-char command[LINE_MAX];
+static char command[LINE_MAX];
 
 char notify_init(char debug_enabled) {
-	DBusError dbus_err;
-	int ret;
+   DBusError dbus_err;
+   int ret;
 
-	dbus_error_init(&dbus_err);
-	dbus_conn=NULL;
+   dbus_error_init(&dbus_err);
+   dbus_conn=NULL;
 
-	dbus_conn = dbus_bus_get(DBUS_BUS_SESSION, &dbus_err);
-	if (NULL == dbus_conn)
-		return 0;
+   dbus_conn = dbus_bus_get(DBUS_BUS_SESSION, &dbus_err);
+   if (NULL == dbus_conn)
+      return 0;
 
-	ret = dbus_bus_request_name(dbus_conn, "org.freedesktop.Notifications", DBUS_NAME_FLAG_REPLACE_EXISTING , &dbus_err);
-	if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret)
-		return 0;
+   ret = dbus_bus_request_name(dbus_conn, "org.freedesktop.Notifications", DBUS_NAME_FLAG_REPLACE_EXISTING , &dbus_err);
+   if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret)
+      return 0;
 
-	DEBUGGING=debug_enabled;
-	
-        const char* config = getenv("XDG_CONFIG_HOME");
-        if(!config)
-        {
-                struct passwd *pw = getpwuid(getuid());
-                config = pw->pw_dir;
-        }
-        
-        char filename[PATH_MAX];
-        snprintf( filename, PATH_MAX, "%s/cow-notify/config", config );
-        sprintf( command, "xcowsay <[summary]> [body]" );
-        
-        FILE* fp;
-        fp = fopen(filename, "r");
-        if(fp)
-        {
-                fgets( command, LINE_MAX, fp );
-                fclose(fp);
-        }
+   DEBUGGING=debug_enabled;
+   
+     const char* config = getenv("XDG_CONFIG_HOME");
+     if(!config)
+     {
+             struct passwd *pw = getpwuid(getuid());
+             config = pw->pw_dir;
+     }
+     
+     char filename[PATH_MAX];
+     snprintf( filename, PATH_MAX, "%s/cow-notify/config", config );
+     sprintf( command, "xcowsay <[summary]> [body]" );
+     
+     FILE* fp;
+     fp = fopen(filename, "r");
+     if(fp)
+     {
+             fgets( command, LINE_MAX, fp );
+             fclose(fp);
+     }
 
-	dbus_error_free(&dbus_err);
-	return 1;
+   dbus_error_free(&dbus_err);
+   return 1;
 }
 
 // returns the first current notification or NULL ( and if n is supplied, number of total messages)
 notification *notify_get_message(int *n) {
-	notification *ptr;
-	int temp=0;
+   notification *ptr;
+   int temp=0;
 
-	if( n==NULL ) n=&temp;
+   if( n==NULL ) n=&temp;
 
-	*n=0;
-	if( messages != NULL ) {
-		// check/remove expired messages
-		while( messages!=NULL && messages->expires_after!=0 && 
-		(messages->started_at + messages->expires_after) < time(NULL) )
-		{
-			notification *t = messages->next;
-			notify_NotificationClosed(messages->nid, 1 + messages->closed*2);
-			free(messages);
-			messages = t;
-		}
+   *n=0;
+   if( messages != NULL ) {
+      // check/remove expired messages
+      while( messages!=NULL && messages->expires_after!=0 && 
+      (messages->started_at + messages->expires_after) < time(NULL) )
+      {
+         notification *t = messages->next;
+         notify_NotificationClosed(messages->nid, 1 + messages->closed*2);
+         free(messages);
+         messages = t;
+      }
 
-		ptr=messages;
-		while( ptr!=NULL ) { ptr=ptr->next; (*n)++; }
-	}
+      ptr=messages;
+      while( ptr!=NULL ) { ptr=ptr->next; (*n)++; }
+   }
 
-	return messages;
+   return messages;
 }
 
 // check the dbus for notifications (1=something happened, 0=nothing)
 char notify_check() {
-	DBusMessage* msg;
+   DBusMessage* msg;
 
-	// non blocking read of the next available message
-	dbus_connection_read_write(dbus_conn, 0);
-	msg = dbus_connection_pop_message(dbus_conn);
+   // non blocking read of the next available message
+   dbus_connection_read_write(dbus_conn, 0);
+   msg = dbus_connection_pop_message(dbus_conn);
 
-	if (msg != NULL) { 
-		if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "Notify")) 
-			notify_Notify(msg);
-		if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetCapabilities")) 
-			notify_GetCapabilities(msg);
-		if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetServerInformation")) 
-			notify_GetServerInformation(msg);
-		if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "CloseNotification")) 
-			notify_CloseNotification(msg);
+   if (msg != NULL) { 
+      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "Notify")) 
+         notify_Notify(msg);
+      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetCapabilities")) 
+         notify_GetCapabilities(msg);
+      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetServerInformation")) 
+         notify_GetServerInformation(msg);
+      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "CloseNotification")) 
+         notify_CloseNotification(msg);
 
-		dbus_message_unref(msg);
-		dbus_connection_flush(dbus_conn);
-		return 1;
-	}
-	return 0;
+      dbus_message_unref(msg);
+      dbus_connection_flush(dbus_conn);
+      return 1;
+   }
+   return 0;
 }
  
 // to support libnotify events, we must implement:
@@ -145,28 +145,28 @@ char notify_check() {
 
 char notify_NotificationClosed(unsigned int nid, unsigned int reason)
 {
-	DBusMessageIter args;
-	DBusMessage* notify_close_msg;
-	serial++;
+   DBusMessageIter args;
+   DBusMessage* notify_close_msg;
+   serial++;
 
-	DEBUG("NotificationClosed(%d, %d)\n", nid, reason);
+   DEBUG("NotificationClosed(%d, %d)\n", nid, reason);
 
-	notify_close_msg = dbus_message_new_signal("/org/freedesktop/Notifications", "org.freedesktop.Notifications", "NotificationClosed");
-	if( notify_close_msg == NULL )
-		return 0;
+   notify_close_msg = dbus_message_new_signal("/org/freedesktop/Notifications", "org.freedesktop.Notifications", "NotificationClosed");
+   if( notify_close_msg == NULL )
+      return 0;
 
-	dbus_message_iter_init_append(notify_close_msg, &args);
-	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &nid) ||
-	!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &reason) ||
-	!dbus_connection_send(dbus_conn, notify_close_msg, &serial))
-	{
-		dbus_message_unref(notify_close_msg);
-		return 0;
-	}
-	dbus_message_unref(notify_close_msg);
+   dbus_message_iter_init_append(notify_close_msg, &args);
+   if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &nid) ||
+   !dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &reason) ||
+   !dbus_connection_send(dbus_conn, notify_close_msg, &serial))
+   {
+      dbus_message_unref(notify_close_msg);
+      return 0;
+   }
+   dbus_message_unref(notify_close_msg);
 
-	DEBUG("   Signal emitted\n");
-	return 1;
+   DEBUG("   Signal emitted\n");
+   return 1;
 }
 
 //	since most libnotify clients dont respect my capabilities, this
@@ -175,20 +175,20 @@ char notify_NotificationClosed(unsigned int nid, unsigned int reason)
 //	strips &amp; - stuff instead of replacing with proper chars  */
 //	* Jeremy Jay *
 void _strip_body(char *text) {
-	int i=0, j=0;
-	char in_tag=0, in_amp=0;
+   int i=0, j=0;
+   char in_tag=0, in_amp=0;
 
-	while( text[j] ) {
-		if( text[j]=='\n' ) text[i++]=' ';
-		else if( text[j]=='\t' ) text[i++]=' ';
-		else if( text[j]=='<' ) in_tag=1;
-		else if( text[j]=='>' && in_tag ) in_tag=0;
-		else if( text[j]=='&' ) in_amp=1;
-		else if( text[j]==';' && in_amp ) { in_amp=0; text[i++]=' '; }
-		else if( !in_tag && !in_amp ) text[i++]=text[j];
-		j++;
-	}
-	text[i]=0;
+   while( text[j] ) {
+      if( text[j]=='\n' ) text[i++]=' ';
+      else if( text[j]=='\t' ) text[i++]=' ';
+      else if( text[j]=='<' ) in_tag=1;
+      else if( text[j]=='>' && in_tag ) in_tag=0;
+      else if( text[j]=='&' ) in_amp=1;
+      else if( text[j]==';' && in_amp ) { in_amp=0; text[i++]=' '; }
+      else if( !in_tag && !in_amp ) text[i++]=text[j];
+      j++;
+   }
+   text[i]=0;
 }
 
  /* precondition: s!=0, old!=0, new!=0 */
@@ -215,64 +215,64 @@ char *str_replace(const char *s, const char *old, const char *new)
 
 // Notify
 char notify_Notify(DBusMessage *msg) {
-	DBusMessage* reply;
-	DBusMessageIter args;
-	const char *appname;
-	const char *summary;
-	const char *body;
-	dbus_uint32_t nid=0;
-	dbus_int32_t expires=-1;
-	notification *ptr = messages;
-	notification *note = NULL;
+   DBusMessage* reply;
+   DBusMessageIter args;
+   const char *appname;
+   const char *summary;
+   const char *body;
+   dbus_uint32_t nid=0;
+   dbus_int32_t expires=-1;
+   notification *ptr = messages;
+   notification *note = NULL;
 
-	serial++;
+   serial++;
 
-	dbus_message_iter_init(msg, &args);
-	dbus_message_iter_get_basic(&args, &appname);
-	dbus_message_iter_next( &args );
-	dbus_message_iter_get_basic(&args, &nid);
-	dbus_message_iter_next( &args );
-	dbus_message_iter_next( &args );  // skip icon
-	dbus_message_iter_get_basic(&args, &summary);
-	dbus_message_iter_next( &args );
-	dbus_message_iter_get_basic(&args, &body);
-	dbus_message_iter_next( &args );
-	dbus_message_iter_next( &args );  // skip actions
-	dbus_message_iter_next( &args );  // skip hints
-	dbus_message_iter_get_basic(&args, &expires);
+   dbus_message_iter_init(msg, &args);
+   dbus_message_iter_get_basic(&args, &appname);
+   dbus_message_iter_next( &args );
+   dbus_message_iter_get_basic(&args, &nid);
+   dbus_message_iter_next( &args );
+   dbus_message_iter_next( &args );  // skip icon
+   dbus_message_iter_get_basic(&args, &summary);
+   dbus_message_iter_next( &args );
+   dbus_message_iter_get_basic(&args, &body);
+   dbus_message_iter_next( &args );
+   dbus_message_iter_next( &args );  // skip actions
+   dbus_message_iter_next( &args );  // skip hints
+   dbus_message_iter_get_basic(&args, &expires);
 
-	DEBUG("Notify('%s', %u, -, '%s', '%s', -, -, %d)\n",appname, nid, summary, body, expires);
+   DEBUG("Notify('%s', %u, -, '%s', '%s', -, -, %d)\n",appname, nid, summary, body, expires);
 
-	if( nid!=0 ) { // update existing message
-		note = messages;
-		if( note!=NULL )
-			while( note->nid != nid && note->next!=NULL ) note=note->next;
+      if( nid!=0 ) { // update existing message
+         note = messages;
+         if( note!=NULL )
+            while( note->nid != nid && note->next!=NULL ) note=note->next;
 
-		if( note==NULL || note->nid!=nid ) { // not found, re-create
-			note = calloc(sizeof(notification), 1);
-			note->nid=nid;
-			nid=0;
-		}
-	} else {
-		note = calloc(sizeof(notification), 1);
-		note->nid=curNid++;
-		note->started_at = time(NULL);
-	}
-	note->expires_after = (time_t)(expires<0?EXPIRE_DEFAULT:expires*EXPIRE_MULT);
-	note->closed=0;
-	strncpy( note->appname, appname, 20);
-	strncpy( note->summary, summary, 64);
-	strncpy( note->body,    body, 256);
-	_strip_body(note->body);
-	DEBUG("   body stripped to: '%s'\n", note->body);
+         if( note==NULL || note->nid!=nid ) { // not found, re-create
+            note = calloc(sizeof(notification), 1);
+            note->nid=nid;
+            nid=0;
+         }
+      } else {
+         note = calloc(sizeof(notification), 1);
+         note->nid=curNid++;
+         note->started_at = time(NULL);
+      }
+      note->expires_after = (time_t)(expires<0?EXPIRE_DEFAULT:expires*EXPIRE_MULT);
+      note->closed=0;
+      strncpy( note->appname, appname, 20);
+      strncpy( note->summary, summary, 64);
+      strncpy( note->body,    body, 256);
+      _strip_body(note->body);
+      DEBUG("   body stripped to: '%s'\n", note->body);
 
-	if( nid==0 ) {
-		if( ptr==NULL ) messages=note;
-		else {
-			while( ptr->next != NULL ) ptr=ptr->next;
-			ptr->next=note;
-		}
-	}
+         if( nid==0 ) {
+            if( ptr==NULL ) messages=note;
+            else {
+               while( ptr->next != NULL ) ptr=ptr->next;
+               ptr->next=note;
+            }
+         }
         
         puts(command);
         char *tmp = NULL, *parsed = NULL;
@@ -292,11 +292,11 @@ char notify_Notify(DBusMessage *msg) {
         if(parsed)
         {
            char expireTime[LINE_MAX];
-           int mult = 1000;
-           sprintf(expireTime, "%d", ( strlen( note->body ? note->body : "" ) + strlen( note->summary ? note->summary : "" ) ) * mult );
+           sprintf(expireTime, "%d", note->expires_after ? note->expires_after : EXPIRE_DEFAULT);
            tmp = str_replace( parsed, "[expire]", expireTime );
            if(tmp)
            {
+              puts(tmp);
               free(parsed);
               parsed = tmp;
            }
@@ -310,109 +310,109 @@ char notify_Notify(DBusMessage *msg) {
         system( parsed );
         free(parsed);
 
-	reply = dbus_message_new_method_return(msg);
+   reply = dbus_message_new_method_return(msg);
 
-	dbus_message_iter_init_append(reply, &args);
-	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &(note->nid)) ||
-	!dbus_connection_send(dbus_conn, reply, &serial))
-	{
-		return 1;
-	}
-	dbus_message_unref(reply);
+   dbus_message_iter_init_append(reply, &args);
+   if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &(note->nid)) ||
+   !dbus_connection_send(dbus_conn, reply, &serial))
+   {
+      return 1;
+   }
+   dbus_message_unref(reply);
 
-	DEBUG("   Notification %d created.\n", note->nid);
-	return 1;
+   DEBUG("   Notification %d created.\n", note->nid);
+   return 1;
 }
 
 // CloseNotification
 char notify_CloseNotification(DBusMessage *msg) {
-	DBusMessage* reply;
-	DBusMessageIter args;
-	dbus_uint32_t nid=0;
-	notification *ptr = messages;
+   DBusMessage* reply;
+   DBusMessageIter args;
+   dbus_uint32_t nid=0;
+   notification *ptr = messages;
 
-	dbus_message_iter_init(msg, &args);
-	dbus_message_iter_get_basic(&args, &nid);
+   dbus_message_iter_init(msg, &args);
+   dbus_message_iter_get_basic(&args, &nid);
 
-	DEBUG("CloseNotification(%d)\n", nid);
+   DEBUG("CloseNotification(%d)\n", nid);
 
-	if( ptr!=NULL && ptr->nid==nid ) {
-		ptr->expires_after=(time(NULL) - ptr->started_at)*EXPIRE_MULT;
-		ptr->closed=1;
-	} else if( ptr!=NULL ) {
-		while( ptr->next != NULL && ptr->next->nid != nid ) {
-			ptr=ptr->next;
-		}
+   if( ptr!=NULL && ptr->nid==nid ) {
+      ptr->expires_after=(time(NULL) - ptr->started_at)*EXPIRE_MULT;
+      ptr->closed=1;
+   } else if( ptr!=NULL ) {
+      while( ptr->next != NULL && ptr->next->nid != nid ) {
+         ptr=ptr->next;
+      }
 
-		if( ptr->next != NULL && ptr->next->nid==nid ) {
-			ptr = ptr->next;
-			ptr->expires_after=(time(NULL) - ptr->started_at)*EXPIRE_MULT;
-			ptr->closed=1;
-		}
-	}
+      if( ptr->next != NULL && ptr->next->nid==nid ) {
+         ptr = ptr->next;
+         ptr->expires_after=(time(NULL) - ptr->started_at)*EXPIRE_MULT;
+         ptr->closed=1;
+      }
+   }
 
-	reply = dbus_message_new_method_return(msg);
-	if( !dbus_connection_send(dbus_conn, reply, &serial)) return 1;
-	dbus_message_unref(reply);
+   reply = dbus_message_new_method_return(msg);
+   if( !dbus_connection_send(dbus_conn, reply, &serial)) return 1;
+   dbus_message_unref(reply);
 
-	DEBUG("   Close Notification Queued.\n");
-	return 1;
+   DEBUG("   Close Notification Queued.\n");
+   return 1;
 }
 
 // GetCapabilites
 char notify_GetCapabilities(DBusMessage *msg) {
-	DBusMessage* reply;
-	DBusMessageIter args;
-	DBusMessageIter subargs;
-	int ncaps = 1;
-	
-	char *caps[1] = {"body"}, **ptr = caps;  // workaround (see specs)
-	serial++;
+   DBusMessage* reply;
+   DBusMessageIter args;
+   DBusMessageIter subargs;
+   int ncaps = 1;
+   
+   char *caps[1] = {"body"}, **ptr = caps;  // workaround (see specs)
+   serial++;
 
-	printf("GetCapabilities called!\n");
+   printf("GetCapabilities called!\n");
 
-	reply = dbus_message_new_method_return(msg);
-	if(!reply)
-	{
-		return 0;
-	}
+   reply = dbus_message_new_method_return(msg);
+   if(!reply)
+   {
+      return 0;
+   }
 
-	dbus_message_iter_init_append(reply, &args);	
-	if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, NULL, &subargs ) ||
-			 !dbus_message_iter_append_fixed_array(&subargs, DBUS_TYPE_STRING, &ptr, ncaps) ||
-			 !dbus_message_iter_close_container(&args, &subargs) ||
-	!dbus_connection_send(dbus_conn, reply, &serial))
-	{
-		 return 1;
-	}
+   dbus_message_iter_init_append(reply, &args);	
+   if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, NULL, &subargs ) ||
+          !dbus_message_iter_append_fixed_array(&subargs, DBUS_TYPE_STRING, &ptr, ncaps) ||
+          !dbus_message_iter_close_container(&args, &subargs) ||
+   !dbus_connection_send(dbus_conn, reply, &serial))
+   {
+       return 1;
+   }
 
-	dbus_message_unref(reply);
-	
-	return 0;
+   dbus_message_unref(reply);
+   
+   return 0;
 }
 
 // GetServerInformation
 char notify_GetServerInformation(DBusMessage *msg) {
-	DBusMessage* reply;
-	DBusMessageIter args;
-	
-	char* info[4] = {"cow-notify", "cow-notify", "0.1", "1.0"};
-	serial++;
+   DBusMessage* reply;
+   DBusMessageIter args;
+   
+   char* info[4] = {"cow-notify", "cow-notify", "0.1", "1.0"};
+   serial++;
 
-	printf("GetServerInfo called!\n");
+   printf("GetServerInfo called!\n");
 
-	reply = dbus_message_new_method_return(msg);
+   reply = dbus_message_new_method_return(msg);
 
-	dbus_message_iter_init_append(reply, &args);
-	if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[0]) ||
-	!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[1]) ||
-	!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[2]) ||
-	!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[3]) ||
-	!dbus_connection_send(dbus_conn, reply, &serial))
-	{
-		return 1;
-	}
+   dbus_message_iter_init_append(reply, &args);
+   if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[0]) ||
+   !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[1]) ||
+   !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[2]) ||
+   !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[3]) ||
+   !dbus_connection_send(dbus_conn, reply, &serial))
+   {
+      return 1;
+   }
 
-	dbus_message_unref(reply);
-	return 0;
+   dbus_message_unref(reply);
+   return 0;
 }
