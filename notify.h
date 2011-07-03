@@ -8,7 +8,7 @@
 #define EXPIRE_MULT     2
 
 // default command
-#define DEFAULT_CMD     "xcowsay <[summary]> [body]"
+#define DEFAULT_CMD     "xcowsay '<[summary]>' '[body]'"
 
 // config dir
 #define CFG_DIR         "cow-notify"

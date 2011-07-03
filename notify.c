@@ -38,18 +38,18 @@ static void read_command(void)
       struct passwd *pw = getpwuid(getuid());
       config = pw->pw_dir;
    }
-     
+
    char filename[PATH_MAX];
    snprintf( filename, PATH_MAX, "%s/%s/%s", config, CFG_DIR, CFG_FIL );
    sprintf( command, DEFAULT_CMD );
-     
+
    FILE* fp;
    fp = fopen(filename, "r");
    if(fp)
    {
       fgets( command, LINE_MAX, fp );
       fclose(fp);
-   }     
+   }
 }
 
 char notify_init(char debug_enabled) {
@@ -68,7 +68,7 @@ char notify_init(char debug_enabled) {
       return 0;
 
    DEBUGGING=debug_enabled;
-   
+
    read_command();
 
    dbus_error_free(&dbus_err);
@@ -85,7 +85,7 @@ notification *notify_get_message(int *n) {
    *n=0;
    if( messages != NULL ) {
       // check/remove expired messages
-      while( messages!=NULL && messages->expires_after!=0 && 
+      while( messages!=NULL && messages->expires_after!=0 &&
       (messages->started_at + messages->expires_after) < time(NULL) )
       {
          notification *t = messages->next;
@@ -109,14 +109,14 @@ char notify_check() {
    dbus_connection_read_write(dbus_conn, 0);
    msg = dbus_connection_pop_message(dbus_conn);
 
-   if (msg != NULL) { 
-      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "Notify")) 
+   if (msg != NULL) {
+      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "Notify"))
          notify_Notify(msg);
-      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetCapabilities")) 
+      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetCapabilities"))
          notify_GetCapabilities(msg);
-      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetServerInformation")) 
+      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetServerInformation"))
          notify_GetServerInformation(msg);
-      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "CloseNotification")) 
+      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "CloseNotification"))
          notify_CloseNotification(msg);
 
       dbus_message_unref(msg);
@@ -125,7 +125,7 @@ char notify_check() {
    }
    return 0;
 }
- 
+
 // to support libnotify events, we must implement:
 //
 // Methods:
@@ -139,7 +139,7 @@ char notify_check() {
 //
 //   org.freedesktop.Notifications.GetServerInformation
 //     returns "dwmstatus", "suckless", "0.1"
-//     
+//
 //   org.freedesktop.Notifications.CloseNotification (nid)
 //     forcefully hide and remove notification
 //     emits NotificationClosed signal when done
@@ -228,7 +228,7 @@ static void run_command( notification *note )
    else
    {
       DEBUG(tmp);
-      parsed = str_replace( tmp, "[body]", note->body ? note->body : "" ); 
+      parsed = str_replace( tmp, "[body]", note->body ? note->body : "" );
       if(parsed)
          free(tmp);
       else
@@ -250,10 +250,29 @@ static void run_command( notification *note )
 
    if(!parsed)
       parsed = strdup(command);
-  
+   else
+   {
+      /* try to strip some malicious stuff */
+      tmp = str_replace( parsed, "`", "" );
+      if(tmp)
+      {
+         DEBUG(tmp);
+         free(parsed);
+         parsed = tmp;
+      }
+
+      tmp = str_replace( parsed, "$", "" );
+      if(tmp)
+      {
+         DEBUG(tmp);
+         free(parsed);
+         parsed = tmp;
+      }
+   }
+
   DEBUG(parsed);
   system( parsed );
-  free(parsed);    
+  free(parsed);
 }
 
 // Notify
@@ -301,7 +320,7 @@ char notify_Notify(DBusMessage *msg) {
        note->nid=curNid++;
        note->started_at = time(NULL);
    }
-   
+
    note->expires_after = (time_t)(expires<0?EXPIRE_DEFAULT:expires*EXPIRE_MULT);
    note->closed=0;
    strncpy( note->appname, appname, 20);
@@ -317,7 +336,7 @@ char notify_Notify(DBusMessage *msg) {
             ptr->next=note;
       }
    }
-        
+
    run_command( note );
    reply = dbus_message_new_method_return(msg);
 
@@ -374,7 +393,7 @@ char notify_GetCapabilities(DBusMessage *msg) {
    DBusMessageIter args;
    DBusMessageIter subargs;
    int ncaps = 1;
-   
+
    char *caps[1] = {"body"}, **ptr = caps;  // workaround (see specs)
    serial++;
 
@@ -386,7 +405,7 @@ char notify_GetCapabilities(DBusMessage *msg) {
       return 0;
    }
 
-   dbus_message_iter_init_append(reply, &args);	
+   dbus_message_iter_init_append(reply, &args);
    if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, NULL, &subargs ) ||
           !dbus_message_iter_append_fixed_array(&subargs, DBUS_TYPE_STRING, &ptr, ncaps) ||
           !dbus_message_iter_close_container(&args, &subargs) ||
@@ -396,7 +415,7 @@ char notify_GetCapabilities(DBusMessage *msg) {
    }
 
    dbus_message_unref(reply);
-   
+
    return 0;
 }
 
@@ -404,7 +423,7 @@ char notify_GetCapabilities(DBusMessage *msg) {
 char notify_GetServerInformation(DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
-   
+
    char* info[4] = {"cow-notify", "cow-notify", "0.1", "1.0"};
    serial++;
 
