@@ -177,8 +177,7 @@ char notify_NotificationClosed(unsigned int nid, unsigned int reason)
 //	since most libnotify clients dont respect my capabilities, this
 //	simple helper will strip html tags and endlines from notifications
 //	modifies string in place
-//	strips &amp; - stuff instead of replacing with proper chars  */
-//	* Jeremy Jay *
+//	strips &amp; - stuff instead of replacing with proper chars
 void _strip_body(char *text) {
    int i=0, j=0;
    char in_tag=0, in_amp=0;
@@ -220,14 +219,12 @@ char *str_replace(const char *s, const char *old, const char *new)
 
 static void run_command( notification *note )
 {
-   DEBUG(command);
    char *tmp = NULL, *parsed = NULL;
    tmp = str_replace( command, "[summary]", note->summary ? note->summary : "" );
    if(!tmp)
       parsed = str_replace( command, "[body]", note->body ? note->body : "" );
    else
    {
-      DEBUG(tmp);
       parsed = str_replace( tmp, "[body]", note->body ? note->body : "" );
       if(parsed)
          free(tmp);
@@ -242,7 +239,6 @@ static void run_command( notification *note )
      tmp = str_replace( parsed, "[expire]", expireTime );
      if(tmp)
      {
-        DEBUG(tmp);
         free(parsed);
         parsed = tmp;
      }
@@ -256,7 +252,6 @@ static void run_command( notification *note )
       tmp = str_replace( parsed, "`", "" );
       if(tmp)
       {
-         DEBUG(tmp);
          free(parsed);
          parsed = tmp;
       }
@@ -264,7 +259,6 @@ static void run_command( notification *note )
       tmp = str_replace( parsed, "$", "" );
       if(tmp)
       {
-         DEBUG(tmp);
          free(parsed);
          parsed = tmp;
       }

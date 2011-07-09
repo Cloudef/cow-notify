@@ -1,4 +1,4 @@
-cow-notify, fork from dwmstatus ( Jeremy Jay )
+cow-notify, fork from dwmstatus
 
 Notification daemon that runs on background and executes configured command (If there isn't any executes xcowsay)
 
@@ -7,10 +7,13 @@ parses following tags:
 [body]    - Replace with body
 [expire]  - Replace with expiritation time
 
-By default there is no config file, if you want to execute custom command, then create this file : 
+By default there is no config file, if you want to execute custom command, then create this file :
 $XDG_CONFIG_HOME/cow-notify/config and type command eg. "xcowsay --image myimage.png [summary] [body]"
 
-note : Suggest making the config file read only for everyone expect you, so other users can't go and change it to something more dangerous.
+note  : Suggest making the config file read only for everyone expect you, so other users can't go and change it to something more dangerous.
 
-Issues : 
+note2 : Watch out, it uses simple system( ); function to execute your command, so there might be ways for somebody to notify malicious stuff.
+        The code strips out ` and $ letters, but there might be more ways.
+
+Issues :
 	* Fails to reply on some python programs (?)
