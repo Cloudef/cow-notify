@@ -12,7 +12,9 @@ $XDG_CONFIG_HOME/cow-notify/config and type command eg. "xcowsay --image myimage
 
 note  : Suggest making the config file read only for everyone expect you, so other users can't go and change it to something more dangerous.
 
-Watch out, it uses simple system( ); function to execute your command, so there might be ways for somebody to notify malicious stuff.
+Watch out, it uses simple system(); function to execute your command,
+so there might be ways for somebody to notify malicious stuff.
+
 The code strips out ` and $ letters, but there might be more ways.
 
 Issues :
