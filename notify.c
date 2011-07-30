@@ -217,20 +217,41 @@ char *str_replace(const char *s, const char *old, const char *new)
   return cout;
 }
 
+static char* escape_single_quote( char *string )
+{
+   char *tmp;
+   if(!string)
+      return string;
+
+   tmp = str_replace( string, "'", "`" );
+   if(tmp)
+   {
+      free(string);
+      string = tmp;
+   }
+
+   return string;
+}
+
 static void run_command( notification *note )
 {
+   char *summary = escape_single_quote( strdup(note->summary) );
+   char *body    = escape_single_quote( strdup(note->body) );
+
    char *tmp = NULL, *parsed = NULL;
-   tmp = str_replace( command, "[summary]", note->summary ? note->summary : "" );
+   tmp = str_replace( command, "[summary]", summary );
    if(!tmp)
-      parsed = str_replace( command, "[body]", note->body ? note->body : "" );
+      parsed = str_replace( command, "[body]", body );
    else
    {
-      parsed = str_replace( tmp, "[body]", note->body ? note->body : "" );
+      parsed = str_replace( tmp, "[body]", body );
       if(parsed)
          free(tmp);
       else
          parsed = tmp;
    }
+   free(summary);
+   free(body);
 
    if(parsed)
    {
@@ -248,7 +269,7 @@ static void run_command( notification *note )
       parsed = strdup(command);
 
   DEBUG(parsed);
-  system( parsed );
+  system( parsed );  /* SECURITY RISK */
   free(parsed);
 }
 
