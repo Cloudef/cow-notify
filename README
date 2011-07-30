@@ -8,14 +8,14 @@ parses following tags:
 [expire]  - Replace with expiritation time
 
 By default there is no config file, if you want to execute custom command, then create this file :
-$XDG_CONFIG_HOME/cow-notify/config and type command eg. "xcowsay --image myimage.png [summary] [body]"
+$XDG_CONFIG_HOME/cow-notify/config and type command eg. "xcowsay --image myimage.png '[summary]' '[body]'"
 
 note  : Suggest making the config file read only for everyone expect you, so other users can't go and change it to something more dangerous.
 
 Watch out, it uses simple system(); function to execute your command,
 so there might be ways for somebody to notify malicious stuff.
 
-The code strips out ` and $ letters, but there might be more ways.
+Make sure you enclose your [summary] and [body] with single quotes!!
 
 Issues :
 	* Fails to reply on some python programs (?)

@@ -246,23 +246,6 @@ static void run_command( notification *note )
 
    if(!parsed)
       parsed = strdup(command);
-   else
-   {
-      /* try to strip some malicious stuff */
-      tmp = str_replace( parsed, "`", "" );
-      if(tmp)
-      {
-         free(parsed);
-         parsed = tmp;
-      }
-
-      tmp = str_replace( parsed, "$", "" );
-      if(tmp)
-      {
-         free(parsed);
-         parsed = tmp;
-      }
-   }
 
   DEBUG(parsed);
   system( parsed );
