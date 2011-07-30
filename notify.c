@@ -223,7 +223,7 @@ static char* escape_single_quote( char *string )
    if(!string)
       return string;
 
-   tmp = str_replace( string, "'", "`" );
+   tmp = str_replace( string, "'", "'\\''" );
    if(tmp)
    {
       free(string);
