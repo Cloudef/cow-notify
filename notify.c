@@ -324,7 +324,7 @@ char notify_Notify(DBusMessage *msg) {
    strncpy( note->appname, appname, 20);
    strncpy( note->summary, summary, 64);
    strncpy( note->body,    body, 256);
-   _strip_body(note->body);
+   //_strip_body(note->body);
    DEBUG("   body stripped to: '%s'\n", note->body);
 
    if( nid==0 ) {
