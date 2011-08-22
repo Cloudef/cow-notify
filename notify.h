@@ -1,7 +1,7 @@
 #include <dbus/dbus.h>
 
-// default message delay in seconds
-#define EXPIRE_DEFAULT  10
+// default message delay in milliseconds
+#define EXPIRE_DEFAULT  5000
 
 // multiply requested delay by this
 // (slow it down since only one line)
