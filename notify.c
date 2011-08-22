@@ -235,6 +235,7 @@ static char* escape_single_quote( char *string )
 
 static void run_command( notification *note )
 {
+   char *sh = NULL;
    char *summary = escape_single_quote( strdup(note->summary) );
    char *body    = escape_single_quote( strdup(note->body) );
 
@@ -268,9 +269,16 @@ static void run_command( notification *note )
    if(!parsed)
       parsed = strdup(command);
 
-  DEBUG(parsed);
-  system( parsed );  /* SECURITY RISK */
-  free(parsed);
+   if(!(sh = getenv("SHELL"))) sh = "/bin/sh";
+
+   DEBUG(parsed);
+   if(fork() == 0)
+   {
+      setsid();
+      execlp(sh, sh, "-c", parsed, (char*)NULL);
+      free(parsed);
+      _exit(0);
+   }
 }
 
 // Notify

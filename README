@@ -1,6 +1,6 @@
 cow-notify, fork from dwmstatus
 
-Notification daemon that runs on background and executes configured command (If there isn't any executes xcowsay)
+Notification daemon that runs on background and executes configured command (If there isn't any executes xsetroot -name)
 
 parses following tags:
 [summary] - Replace with summary
@@ -10,12 +10,23 @@ parses following tags:
 By default there is no config file, if you want to execute custom command, then create this file :
 $XDG_CONFIG_HOME/cow-notify/config and type command eg. "xcowsay --image myimage.png '[summary]' '[body]'"
 
-note  : Suggest making the config file read only for everyone expect you, so other users can't go and change it to something more dangerous.
+I suggest making the config file read only for everyone expect you, so other users can't go and change it to something more dangerous.
 
-Watch out, it uses simple system(); function to execute your command,
-so there might be ways for somebody to notify malicious stuff.
+!IMPORTANT! Execution
 
-Make sure you enclose your [summary] and [body] with single quotes!!
+   if(!(sh = getenv("SHELL"))) sh = "/bin/sh";
+   if(fork() == 0)
+   {
+      setsid();
+      execlp(sh, sh, "-c", parsed, (char*)NULL);
+      free(parsed);
+      _exit(0);
+   }
+
+Since it exectues shell, all shell rules also apply.
+So make sure your [body] and [summary] are enclosed with single quotes, otherwise notify events can execute commands.
+
+cow-notify escapes all single quote characters inside [body] and [summary], so you don't have to worry about those. However if you have shell that does not use single quotes for strong quoting then you might want to edit the source.
 
 Issues :
 	* Fails to reply on some python programs (?)
