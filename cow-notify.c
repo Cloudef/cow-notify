@@ -1,12 +1,13 @@
 /*
 	cow-notify - 0.1
-	
+
 	Executes command on notification.
 	Edit file XDG_CONFIG_HOME/cow-notify/setting
-	
+
 	Original code dwmstatus by Jeremy Jay
 */
 
+#include <signal.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +19,10 @@
 static char DEBUGGING = 0;
 
 int main(int argc, char **argv)
-{	
+{
+   /* do not wait for forks */
+   signal(SIGCHLD, SIG_IGN);
+
 	if( argc==2 && argv[1][0]=='-' && argv[1][1]=='v' ) {
 		DEBUGGING=1;
 		fprintf(stderr, "debugging enabled.\n");
