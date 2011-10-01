@@ -1,6 +1,3 @@
-// A very basic libnotify daemon
-// original by Jeremy Jay
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,7 +83,7 @@ notification *notify_get_message(int *n) {
    if( messages != NULL ) {
       // check/remove expired messages
       while( messages!=NULL && messages->expires_after!=0 &&
-      (messages->started_at + messages->expires_after) < time(NULL) )
+            (messages->started_at + messages->expires_after) < time(NULL) )
       {
          notification *t = messages->next;
          notify_NotificationClosed(messages->nid, 1 + messages->closed*2);
@@ -162,8 +159,8 @@ char notify_NotificationClosed(unsigned int nid, unsigned int reason)
 
    dbus_message_iter_init_append(notify_close_msg, &args);
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &nid) ||
-   !dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &reason) ||
-   !dbus_connection_send(dbus_conn, notify_close_msg, &serial))
+         !dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &reason) ||
+         !dbus_connection_send(dbus_conn, notify_close_msg, &serial))
    {
       dbus_message_unref(notify_close_msg);
       return 0;
@@ -174,10 +171,10 @@ char notify_NotificationClosed(unsigned int nid, unsigned int reason)
    return 1;
 }
 
-//	since most libnotify clients dont respect my capabilities, this
-//	simple helper will strip html tags and endlines from notifications
-//	modifies string in place
-//	strips &amp; - stuff instead of replacing with proper chars
+// since most libnotify clients dont respect my capabilities, this
+// simple helper will strip html tags and endlines from notifications
+// modifies string in place
+// strips &amp; - stuff instead of replacing with proper chars
 void _strip_body(char *text) {
    int i=0, j=0;
    char in_tag=0, in_amp=0;
@@ -195,19 +192,20 @@ void _strip_body(char *text) {
    text[i]=0;
 }
 
- /* precondition: s!=0, old!=0, new!=0 */
-char *str_replace(const char *s, const char *old, const char *new)
+/* precondition: s!=0, old!=0, new!=0 */
+static char *str_replace(const char *s, const char *old, const char *new)
 {
   size_t slen = strlen(s)+1;
-  char *cout = malloc(slen), *p=cout;
+  char *cout=0, *p=0, *tmp=NULL; cout=malloc(slen); p=cout;
   if( !p )
     return 0;
   while( *s )
     if( !strncmp(s, old, strlen(old)) )
     {
-      p  -= cout;
+      p  -= (intptr_t)cout;
       cout= realloc(cout, slen += strlen(new)-strlen(old) );
-      p  += strlen( strcpy(p=cout+(int)p, new) );
+      tmp = strcpy(p=cout+(intptr_t)p, new);
+      p  += strlen(tmp);
       s  += strlen(old);
     }
     else
@@ -256,14 +254,14 @@ static void run_command( notification *note )
 
    if(parsed)
    {
-     char expireTime[LINE_MAX];
-     sprintf(expireTime, "%d", (int)note->expires_after ? (int)note->expires_after : (int)EXPIRE_DEFAULT);
-     tmp = str_replace( parsed, "[expire]", expireTime );
-     if(tmp)
-     {
-        free(parsed);
-        parsed = tmp;
-     }
+      char expireTime[LINE_MAX];
+      sprintf(expireTime, "%d", (int)note->expires_after ? (int)note->expires_after : (int)EXPIRE_DEFAULT);
+      tmp = str_replace( parsed, "[expire]", expireTime );
+      if(tmp)
+      {
+         free(parsed);
+         parsed = tmp;
+      }
    }
 
    if(!parsed)
@@ -320,11 +318,11 @@ char notify_Notify(DBusMessage *msg) {
          note = calloc(sizeof(notification), 1);
          note->nid=nid;
          nid=0;
-       }
+      }
    } else {
-       note = calloc(sizeof(notification), 1);
-       note->nid=curNid++;
-       note->started_at = time(NULL);
+      note = calloc(sizeof(notification), 1);
+      note->nid=curNid++;
+      note->started_at = time(NULL);
    }
 
    note->expires_after = (time_t)(expires<0?EXPIRE_DEFAULT:expires*EXPIRE_MULT);
@@ -339,7 +337,7 @@ char notify_Notify(DBusMessage *msg) {
       if( ptr==NULL ) messages=note;
       else {
          while( ptr->next != NULL ) ptr=ptr->next;
-            ptr->next=note;
+         ptr->next=note;
       }
    }
 
@@ -348,7 +346,7 @@ char notify_Notify(DBusMessage *msg) {
 
    dbus_message_iter_init_append(reply, &args);
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &(note->nid)) ||
-   !dbus_connection_send(dbus_conn, reply, &serial))
+         !dbus_connection_send(dbus_conn, reply, &serial))
    {
       return 1;
    }
@@ -413,11 +411,11 @@ char notify_GetCapabilities(DBusMessage *msg) {
 
    dbus_message_iter_init_append(reply, &args);
    if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, NULL, &subargs ) ||
-          !dbus_message_iter_append_fixed_array(&subargs, DBUS_TYPE_STRING, &ptr, ncaps) ||
-          !dbus_message_iter_close_container(&args, &subargs) ||
-   !dbus_connection_send(dbus_conn, reply, &serial))
+         !dbus_message_iter_append_fixed_array(&subargs, DBUS_TYPE_STRING, &ptr, ncaps) ||
+         !dbus_message_iter_close_container(&args, &subargs) ||
+         !dbus_connection_send(dbus_conn, reply, &serial))
    {
-       return 1;
+      return 1;
    }
 
    dbus_message_unref(reply);
@@ -439,10 +437,10 @@ char notify_GetServerInformation(DBusMessage *msg) {
 
    dbus_message_iter_init_append(reply, &args);
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[0]) ||
-   !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[1]) ||
-   !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[2]) ||
-   !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[3]) ||
-   !dbus_connection_send(dbus_conn, reply, &serial))
+         !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[1]) ||
+         !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[2]) ||
+         !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[3]) ||
+         !dbus_connection_send(dbus_conn, reply, &serial))
    {
       return 1;
    }

@@ -1,10 +1,7 @@
 /*
-	cow-notify - 0.1
-
-	Executes command on notification.
-	Edit file XDG_CONFIG_HOME/cow-notify/setting
-
-	Original code dwmstatus by Jeremy Jay
+ * cow-notify - 0.1 ~ fork from dwmstatus
+ * Executes command on notification.
+ * Edit file XDG_CONFIG_HOME/cow-notify/setting
 */
 
 #include <signal.h>
@@ -23,23 +20,23 @@ int main(int argc, char **argv)
    /* do not wait for forks */
    signal(SIGCHLD, SIG_IGN);
 
-	if( argc==2 && argv[1][0]=='-' && argv[1][1]=='v' ) {
-		DEBUGGING=1;
-		fprintf(stderr, "debugging enabled.\n");
-	}
+   if( argc==2 && argv[1][0]=='-' && argv[1][1]=='v' ) {
+      DEBUGGING=1;
+      fprintf(stderr, "debugging enabled.\n");
+   }
 
-	while ( !notify_init(DEBUGGING) ) {
-		fprintf(stderr, "cannot bind notifications\n");
-		sleep(1);
-	}
+   while ( !notify_init(DEBUGGING) ) {
+      fprintf(stderr, "cannot bind notifications\n");
+      sleep(1);
+   }
 
-	while ( 1 )
-	{
-		if( !notify_check() )
-		{
-			sleep(1);
-		}
-	}
+   while ( 1 )
+   {
+      if( !notify_check() )
+      {
+         sleep(1);
+      }
+   }
 
-	return 0;
+   return 0;
 }

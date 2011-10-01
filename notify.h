@@ -17,15 +17,15 @@
 #define CFG_FIL         "config"
 
 typedef struct _notification {
-	dbus_uint32_t nid;
-	time_t started_at;
-	time_t expires_after;
-	char closed;
+   dbus_uint32_t nid;
+   time_t started_at;
+   time_t expires_after;
+   char closed;
 
-	char appname[20];
-	char summary[64];
-	char body[256];
-	struct _notification *next;
+   char appname[20];
+   char summary[64];
+   char body[256];
+   struct _notification *next;
 } notification;
 
 // initialize notifications
