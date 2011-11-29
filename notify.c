@@ -31,23 +31,28 @@ static char command[LINE_MAX];
 static void read_command(void)
 {
    const char* config = getenv("XDG_CONFIG_HOME");
-   if(!config)
+   char filename[PATH_MAX];
+   if(config != NULL)
+      snprintf( filename, PATH_MAX, "%s/%s/%s", config, CFG_DIR, CFG_FIL );
+   else
    {
-      struct passwd *pw = getpwuid(getuid());
-      config = pw->pw_dir;
+      config = getenv("HOME");
+      if (config == NULL)
+      {
+         struct passwd *pw = getpwuid(getuid());
+         config = pw->pw_dir;
+      }
+      snprintf( filename, PATH_MAX, "%s/.config/%s/%s", config, CFG_DIR, CFG_FIL );
    }
 
-   char filename[PATH_MAX];
-   snprintf( filename, PATH_MAX, "%s/%s/%s", config, CFG_DIR, CFG_FIL );
-   sprintf( command, DEFAULT_CMD );
-
-   FILE* fp;
-   fp = fopen(filename, "r");
-   if(fp)
+   FILE* fp = fopen(filename, "r");
+   if(fp != NULL)
    {
       fgets( command, LINE_MAX, fp );
       fclose(fp);
    }
+   else
+      sprintf( command, DEFAULT_CMD );
 }
 
 bool notify_init(bool const debug_enabled) {
