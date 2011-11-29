@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -9,8 +10,8 @@
 
 #include "notify.h"
 
-#define DEBUG(...) if( DEBUGGING ) fprintf(stderr, __VA_ARGS__)
-char DEBUGGING=0;
+#define DEBUG(...) if( DEBUGGING == true) fprintf(stderr, __VA_ARGS__)
+bool DEBUGGING=0;
 
 notification *messages=NULL;
 
@@ -18,11 +19,11 @@ dbus_uint32_t curNid = 1;
 dbus_uint32_t serial = 0xDEADBEEF;
 DBusConnection* dbus_conn;
 
-char notify_Notify(DBusMessage *msg);
-char notify_GetCapabilities(DBusMessage *msg);
-char notify_GetServerInformation(DBusMessage *msg);
-char notify_CloseNotification(DBusMessage *msg);
-char notify_NotificationClosed(unsigned int nid, unsigned int reason);
+bool notify_Notify(DBusMessage *msg);
+bool notify_GetCapabilities(DBusMessage *msg);
+bool notify_GetServerInformation(DBusMessage *msg);
+bool notify_CloseNotification(DBusMessage *msg);
+bool notify_NotificationClosed(unsigned int nid, unsigned int reason);
 
 // Command from file
 static char command[LINE_MAX];
@@ -49,7 +50,7 @@ static void read_command(void)
    }
 }
 
-char notify_init(char debug_enabled) {
+bool notify_init(bool const debug_enabled) {
    DBusError dbus_err;
    int ret;
 
@@ -99,7 +100,7 @@ notification *notify_get_message(int *n) {
 }
 
 // check the dbus for notifications (1=something happened, 0=nothing)
-char notify_check() {
+bool notify_check() {
    DBusMessage* msg;
 
    // non blocking read of the next available message
@@ -118,9 +119,9 @@ char notify_check() {
 
       dbus_message_unref(msg);
       dbus_connection_flush(dbus_conn);
-      return 1;
+      return true;
    }
-   return 0;
+   return false;
 }
 
 // to support libnotify events, we must implement:
@@ -145,7 +146,7 @@ char notify_check() {
 //   org.freedesktop.Notifications.NotificationClosed -> (nid, reason )
 //     whenever notification is closed(reason=3) or expires(reason=1)
 
-char notify_NotificationClosed(unsigned int nid, unsigned int reason)
+bool notify_NotificationClosed(unsigned int nid, unsigned int reason)
 {
    DBusMessageIter args;
    DBusMessage* notify_close_msg;
@@ -155,7 +156,7 @@ char notify_NotificationClosed(unsigned int nid, unsigned int reason)
 
    notify_close_msg = dbus_message_new_signal("/org/freedesktop/Notifications", "org.freedesktop.Notifications", "NotificationClosed");
    if( notify_close_msg == NULL )
-      return 0;
+      return false;
 
    dbus_message_iter_init_append(notify_close_msg, &args);
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &nid) ||
@@ -163,12 +164,12 @@ char notify_NotificationClosed(unsigned int nid, unsigned int reason)
          !dbus_connection_send(dbus_conn, notify_close_msg, &serial))
    {
       dbus_message_unref(notify_close_msg);
-      return 0;
+      return false;
    }
    dbus_message_unref(notify_close_msg);
 
    DEBUG("   Signal emitted\n");
-   return 1;
+   return true;
 }
 
 // since most libnotify clients dont respect my capabilities, this
@@ -177,16 +178,16 @@ char notify_NotificationClosed(unsigned int nid, unsigned int reason)
 // strips &amp; - stuff instead of replacing with proper chars
 void _strip_body(char *text) {
    int i=0, j=0;
-   char in_tag=0, in_amp=0;
+   bool in_tag = false, in_amp = false;
 
    while( text[j] ) {
       if( text[j]=='\n' ) text[i++]=' ';
       else if( text[j]=='\t' ) text[i++]=' ';
-      else if( text[j]=='<' ) in_tag=1;
-      else if( text[j]=='>' && in_tag ) in_tag=0;
-      else if( text[j]=='&' ) in_amp=1;
-      else if( text[j]==';' && in_amp ) { in_amp=0; text[i++]=' '; }
-      else if( !in_tag && !in_amp ) text[i++]=text[j];
+      else if( text[j]=='<' ) in_tag = true;
+      else if( text[j]=='>' && in_tag == true) in_tag = false;
+      else if( text[j]=='&' ) in_amp = true;
+      else if( text[j]==';' && in_amp == true) { in_amp = false; text[i++]=' '; }
+      else if( in_tag == false && in_amp == false ) text[i++]=text[j];
       j++;
    }
    text[i]=0;
@@ -280,7 +281,7 @@ static void run_command( notification *note )
 }
 
 // Notify
-char notify_Notify(DBusMessage *msg) {
+bool notify_Notify(DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    const char *appname;
@@ -348,16 +349,16 @@ char notify_Notify(DBusMessage *msg) {
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &(note->nid)) ||
          !dbus_connection_send(dbus_conn, reply, &serial))
    {
-      return 1;
+      return false;
    }
    dbus_message_unref(reply);
 
    DEBUG("   Notification %d created.\n", note->nid);
-   return 1;
+   return true;
 }
 
 // CloseNotification
-char notify_CloseNotification(DBusMessage *msg) {
+bool notify_CloseNotification(DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    dbus_uint32_t nid=0;
@@ -384,15 +385,15 @@ char notify_CloseNotification(DBusMessage *msg) {
    }
 
    reply = dbus_message_new_method_return(msg);
-   if( !dbus_connection_send(dbus_conn, reply, &serial)) return 1;
+   if( !dbus_connection_send(dbus_conn, reply, &serial)) return false;
    dbus_message_unref(reply);
 
    DEBUG("   Close Notification Queued.\n");
-   return 1;
+   return true;
 }
 
 // GetCapabilites
-char notify_GetCapabilities(DBusMessage *msg) {
+bool notify_GetCapabilities(DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    DBusMessageIter subargs;
@@ -406,7 +407,7 @@ char notify_GetCapabilities(DBusMessage *msg) {
    reply = dbus_message_new_method_return(msg);
    if(!reply)
    {
-      return 0;
+      return false;
    }
 
    dbus_message_iter_init_append(reply, &args);
@@ -415,16 +416,16 @@ char notify_GetCapabilities(DBusMessage *msg) {
          !dbus_message_iter_close_container(&args, &subargs) ||
          !dbus_connection_send(dbus_conn, reply, &serial))
    {
-      return 1;
+      return false;
    }
 
    dbus_message_unref(reply);
 
-   return 0;
+   return true;
 }
 
 // GetServerInformation
-char notify_GetServerInformation(DBusMessage *msg) {
+bool notify_GetServerInformation(DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
 
@@ -442,9 +443,9 @@ char notify_GetServerInformation(DBusMessage *msg) {
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[3]) ||
          !dbus_connection_send(dbus_conn, reply, &serial))
    {
-      return 1;
+      return false;
    }
 
    dbus_message_unref(reply);
-   return 0;
+   return true;
 }

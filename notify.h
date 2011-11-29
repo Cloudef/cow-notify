@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include <dbus/dbus.h>
 
 // default message delay in milliseconds
@@ -29,10 +31,10 @@ typedef struct _notification {
 } notification;
 
 // initialize notifications
-char notify_init(char debug_enabled);
+bool notify_init(bool const debug_enabled);
 
 // returns the first current notification into status (number of total messages in n)
 notification *notify_get_message(int *n);
 
 // check the dbus for notifications (1=something happened, 0=nothing)
-char notify_check();
+bool notify_check();

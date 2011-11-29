@@ -6,6 +6,7 @@
 
 #include <signal.h>
 #include <string.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,7 +14,7 @@
 
 #include "notify.h"
 
-static char DEBUGGING = 0;
+static bool DEBUGGING = false;
 
 int main(int argc, char **argv)
 {
@@ -21,7 +22,7 @@ int main(int argc, char **argv)
    signal(SIGCHLD, SIG_IGN);
 
    if( argc==2 && argv[1][0]=='-' && argv[1][1]=='v' ) {
-      DEBUGGING=1;
+      DEBUGGING = true;
       fprintf(stderr, "debugging enabled.\n");
    }
 
@@ -30,7 +31,7 @@ int main(int argc, char **argv)
       sleep(1);
    }
 
-   while ( 1 )
+   while ( true )
    {
       if( !notify_check() )
       {
