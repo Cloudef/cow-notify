@@ -6,7 +6,7 @@ all:
 	${CC} ${CFLAGS} -DUSE_NOTIFY `pkg-config --cflags --libs dbus-1` cow-notify.c -o ${TARGET} notify.c
 
 clean:
-	rm ${TARGET}
+	rm -f ${TARGET}
 
 install:
 	cp ${TARGET} ${PREFIX}/bin/

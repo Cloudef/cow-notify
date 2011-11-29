@@ -55,31 +55,31 @@ static void read_command(void)
       sprintf( command, DEFAULT_CMD );
 }
 
-bool notify_init(bool const debug_enabled) {
+DBusConnection* notify_init(bool const debug_enabled) {
    DBusError dbus_err;
    int ret;
 
    dbus_error_init(&dbus_err);
-   dbus_conn=NULL;
+   DBusConnection *dbus = NULL;
 
-   dbus_conn = dbus_bus_get(DBUS_BUS_SESSION, &dbus_err);
-   if (NULL == dbus_conn)
-      return 0;
+   dbus = dbus_bus_get(DBUS_BUS_SESSION, &dbus_err);
+   if (NULL == dbus)
+      return NULL;
 
-   ret = dbus_bus_request_name(dbus_conn, "org.freedesktop.Notifications", DBUS_NAME_FLAG_REPLACE_EXISTING , &dbus_err);
+   ret = dbus_bus_request_name(dbus, "org.freedesktop.Notifications", DBUS_NAME_FLAG_REPLACE_EXISTING , &dbus_err);
    if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret)
-      return 0;
+      return NULL;
 
    DEBUGGING=debug_enabled;
 
    read_command();
 
    dbus_error_free(&dbus_err);
-   return 1;
+   return dbus;
 }
 
 // returns the first current notification or NULL ( and if n is supplied, number of total messages)
-notification *notify_get_message(int *n) {
+notification *notify_get_message(DBusConnection *dbus, int *n) {
    notification *ptr;
    int temp=0;
 
@@ -92,7 +92,7 @@ notification *notify_get_message(int *n) {
             (messages->started_at + messages->expires_after) < time(NULL) )
       {
          notification *t = messages->next;
-         notify_NotificationClosed(messages->nid, 1 + messages->closed*2);
+         notify_NotificationClosed(dbus, messages->nid, 1 + messages->closed*2);
          free(messages);
          messages = t;
       }
@@ -104,26 +104,34 @@ notification *notify_get_message(int *n) {
    return messages;
 }
 
+DBusHandlerResult notify_handle(DBusConnection *dbus, DBusMessage *msg, void *user_data) {
+   (void)(user_data);
+   if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "Notify"))
+      notify_Notify(dbus, msg);
+   else if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetCapabilities"))
+      notify_GetCapabilities(dbus, msg);
+   else if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetServerInformation"))
+      notify_GetServerInformation(dbus, msg);
+   else if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "CloseNotification"))
+      notify_CloseNotification(dbus, msg);
+   else
+      return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+   return  DBUS_HANDLER_RESULT_HANDLED;
+}
+
 // check the dbus for notifications (1=something happened, 0=nothing)
-bool notify_check() {
+bool notify_check(DBusConnection *dbus) {
    DBusMessage* msg;
 
    // non blocking read of the next available message
-   dbus_connection_read_write(dbus_conn, 0);
-   msg = dbus_connection_pop_message(dbus_conn);
+   dbus_connection_read_write(dbus, 0);
+   msg = dbus_connection_pop_message(dbus);
 
    if (msg != NULL) {
-      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "Notify"))
-         notify_Notify(msg);
-      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetCapabilities"))
-         notify_GetCapabilities(msg);
-      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "GetServerInformation"))
-         notify_GetServerInformation(msg);
-      if (dbus_message_is_method_call(msg, "org.freedesktop.Notifications", "CloseNotification"))
-         notify_CloseNotification(msg);
+      notify_handle(dbus, msg, NULL);
 
       dbus_message_unref(msg);
-      dbus_connection_flush(dbus_conn);
+      dbus_connection_flush(dbus);
       return true;
    }
    return false;
@@ -151,7 +159,7 @@ bool notify_check() {
 //   org.freedesktop.Notifications.NotificationClosed -> (nid, reason )
 //     whenever notification is closed(reason=3) or expires(reason=1)
 
-bool notify_NotificationClosed(unsigned int nid, unsigned int reason)
+bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned int reason)
 {
    DBusMessageIter args;
    DBusMessage* notify_close_msg;
@@ -286,7 +294,7 @@ static void run_command( notification *note )
 }
 
 // Notify
-bool notify_Notify(DBusMessage *msg) {
+bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    const char *appname;
@@ -363,7 +371,7 @@ bool notify_Notify(DBusMessage *msg) {
 }
 
 // CloseNotification
-bool notify_CloseNotification(DBusMessage *msg) {
+bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    dbus_uint32_t nid=0;
@@ -398,7 +406,7 @@ bool notify_CloseNotification(DBusMessage *msg) {
 }
 
 // GetCapabilites
-bool notify_GetCapabilities(DBusMessage *msg) {
+bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    DBusMessageIter subargs;
@@ -430,7 +438,7 @@ bool notify_GetCapabilities(DBusMessage *msg) {
 }
 
 // GetServerInformation
-bool notify_GetServerInformation(DBusMessage *msg) {
+bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
 
