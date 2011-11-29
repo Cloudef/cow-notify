@@ -9,8 +9,9 @@ clean:
 	rm -f ${TARGET}
 
 install:
-	cp ${TARGET} ${PREFIX}/bin/
-	chmod +x ${PREFIX}/bin/${TARGET}
+	mkdir -p ${DESTDIR}${PREFIX}/bin/
+	cp ${TARGET} ${DESTDIR}${PREFIX}/bin/
+	chmod +x ${DESTDIR}${PREFIX}/bin/${TARGET}
 
 uninstall:
-	rm ${PREFIX}/bin/${TARGET}
+	rm ${DESTDIR}${PREFIX}/bin/${TARGET}
