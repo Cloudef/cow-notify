@@ -31,10 +31,13 @@ typedef struct _notification {
 } notification;
 
 // initialize notifications
-bool notify_init(bool const debug_enabled);
+DBusConnection* notify_init(bool const debug_enabled);
 
 // returns the first current notification into status (number of total messages in n)
-notification *notify_get_message(int *n);
+notification* notify_get_message(DBusConnection *dbus, int *n);
+
+// calls the respective notify handler based on the message received
+DBusHandlerResult notify_handle(DBusConnection *dbus, DBusMessage *msg, void *user_data);
 
 // check the dbus for notifications (1=something happened, 0=nothing)
-bool notify_check();
+bool notify_check(DBusConnection *dbus);

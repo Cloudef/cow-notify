@@ -16,13 +16,11 @@ bool DEBUGGING=0;
 notification *messages=NULL;
 
 dbus_uint32_t curNid = 1;
-DBusConnection* dbus_conn;
-
-bool notify_Notify(DBusMessage *msg);
-bool notify_GetCapabilities(DBusMessage *msg);
-bool notify_GetServerInformation(DBusMessage *msg);
-bool notify_CloseNotification(DBusMessage *msg);
-bool notify_NotificationClosed(unsigned int nid, unsigned int reason);
+bool notify_Notify(DBusConnection *dbus, DBusMessage *msg);
+bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg);
+bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg);
+bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg);
+bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned int reason);
 
 // Command from file
 static char command[LINE_MAX];
@@ -63,7 +61,7 @@ DBusConnection* notify_init(bool const debug_enabled) {
 
    dbus = dbus_bus_get(DBUS_BUS_SESSION, &dbus_err);
    if (NULL == dbus)
-      return NULL;
+      return 0;
 
    ret = dbus_bus_request_name(dbus, "org.freedesktop.Notifications", DBUS_NAME_FLAG_REPLACE_EXISTING , &dbus_err);
    if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret)
@@ -118,6 +116,7 @@ DBusHandlerResult notify_handle(DBusConnection *dbus, DBusMessage *msg, void *us
    return  DBUS_HANDLER_RESULT_HANDLED;
 }
 
+
 // check the dbus for notifications (1=something happened, 0=nothing)
 bool notify_check(DBusConnection *dbus) {
    DBusMessage* msg;
@@ -128,7 +127,6 @@ bool notify_check(DBusConnection *dbus) {
 
    if (msg != NULL) {
       notify_handle(dbus, msg, NULL);
-
       dbus_message_unref(msg);
       dbus_connection_flush(dbus);
       return true;
@@ -172,7 +170,7 @@ bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned 
    dbus_message_iter_init_append(notify_close_msg, &args);
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &nid) ||
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &reason) ||
-         !dbus_connection_send(dbus_conn, notify_close_msg, NULL))
+         !dbus_connection_send(dbus, notify_close_msg, NULL))
    {
       dbus_message_unref(notify_close_msg);
       return false;
@@ -356,7 +354,7 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
 
    dbus_message_iter_init_append(reply, &args);
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &(note->nid)) ||
-         !dbus_connection_send(dbus_conn, reply, NULL))
+         !dbus_connection_send(dbus, reply, NULL))
    {
       return false;
    }
@@ -394,7 +392,7 @@ bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg) {
    }
 
    reply = dbus_message_new_method_return(msg);
-   if( !dbus_connection_send(dbus_conn, reply, NULL)) return false;
+   if( !dbus_connection_send(dbus, reply, NULL)) return false;
    dbus_message_unref(reply);
 
    DEBUG("   Close Notification Queued.\n");
@@ -426,7 +424,7 @@ bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
          return 1;
 
    if (!dbus_message_iter_close_container(&args, &subargs) ||
-         !dbus_connection_send(dbus_conn, reply, NULL))
+         !dbus_connection_send(dbus, reply, NULL))
    {
       return false;
    }
@@ -452,7 +450,7 @@ bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg) {
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[1]) ||
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[2]) ||
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[3]) ||
-         !dbus_connection_send(dbus_conn, reply, NULL))
+         !dbus_connection_send(dbus, reply, NULL))
    {
       return false;
    }

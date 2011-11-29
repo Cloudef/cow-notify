@@ -26,18 +26,14 @@ int main(int argc, char **argv)
       fprintf(stderr, "debugging enabled.\n");
    }
 
-   while ( !notify_init(DEBUGGING) ) {
+   DBusConnection *dbus = NULL;
+   while ((dbus = notify_init(DEBUGGING)) == NULL) {
       fprintf(stderr, "cannot bind notifications\n");
       sleep(1);
    }
 
-   while ( true )
-   {
-      if( !notify_check() )
-      {
-         sleep(1);
-      }
-   }
+   dbus_connection_add_filter(dbus, notify_handle, NULL, NULL);
+   while(dbus_connection_read_write_dispatch(dbus, -1));
 
    return 0;
 }
