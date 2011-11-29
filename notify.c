@@ -16,7 +16,6 @@ bool DEBUGGING=0;
 notification *messages=NULL;
 
 dbus_uint32_t curNid = 1;
-dbus_uint32_t serial = 0xDEADBEEF;
 DBusConnection* dbus_conn;
 
 bool notify_Notify(DBusMessage *msg);
@@ -163,7 +162,6 @@ bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned 
 {
    DBusMessageIter args;
    DBusMessage* notify_close_msg;
-   serial++;
 
    DEBUG("NotificationClosed(%d, %d)\n", nid, reason);
 
@@ -174,7 +172,7 @@ bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned 
    dbus_message_iter_init_append(notify_close_msg, &args);
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &nid) ||
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &reason) ||
-         !dbus_connection_send(dbus_conn, notify_close_msg, &serial))
+         !dbus_connection_send(dbus_conn, notify_close_msg, NULL))
    {
       dbus_message_unref(notify_close_msg);
       return false;
@@ -305,8 +303,6 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    notification *ptr = messages;
    notification *note = NULL;
 
-   serial++;
-
    dbus_message_iter_init(msg, &args);
    dbus_message_iter_get_basic(&args, &appname);
    dbus_message_iter_next( &args );
@@ -360,7 +356,7 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
 
    dbus_message_iter_init_append(reply, &args);
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &(note->nid)) ||
-         !dbus_connection_send(dbus_conn, reply, &serial))
+         !dbus_connection_send(dbus_conn, reply, NULL))
    {
       return false;
    }
@@ -398,7 +394,7 @@ bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg) {
    }
 
    reply = dbus_message_new_method_return(msg);
-   if( !dbus_connection_send(dbus_conn, reply, &serial)) return false;
+   if( !dbus_connection_send(dbus_conn, reply, NULL)) return false;
    dbus_message_unref(reply);
 
    DEBUG("   Close Notification Queued.\n");
@@ -412,7 +408,6 @@ bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessageIter subargs;
 
    char *caps[] = {"body"};
-   serial++;
 
    DEBUG("GetCapabilities called!\n");
 
@@ -431,7 +426,7 @@ bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
          return 1;
 
    if (!dbus_message_iter_close_container(&args, &subargs) ||
-         !dbus_connection_send(dbus_conn, reply, &serial))
+         !dbus_connection_send(dbus_conn, reply, NULL))
    {
       return false;
    }
@@ -447,7 +442,6 @@ bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessageIter args;
 
    char* info[4] = {"cow-notify", "cow-notify", "0.1", "1.0"};
-   serial++;
 
    DEBUG("GetServerInfo called!\n");
 
@@ -458,7 +452,7 @@ bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg) {
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[1]) ||
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[2]) ||
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[3]) ||
-         !dbus_connection_send(dbus_conn, reply, &serial))
+         !dbus_connection_send(dbus_conn, reply, NULL))
    {
       return false;
    }
