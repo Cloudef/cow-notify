@@ -410,9 +410,8 @@ bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    DBusMessageIter subargs;
-   int ncaps = 1;
 
-   char *caps[1] = {"body"}, **ptr = caps;  // workaround (see specs)
+   char *caps[] = {"body"};
    serial++;
 
    DEBUG("GetCapabilities called!\n");
@@ -424,9 +423,14 @@ bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
    }
 
    dbus_message_iter_init_append(reply, &args);
-   if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, NULL, &subargs ) ||
-         !dbus_message_iter_append_fixed_array(&subargs, DBUS_TYPE_STRING, &ptr, ncaps) ||
-         !dbus_message_iter_close_container(&args, &subargs) ||
+   if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, DBUS_TYPE_STRING_AS_STRING, &subargs ))
+      return 1;
+
+   for (int i = 0; i < sizeof(caps)/sizeof(caps[0]); ++i)
+      if (!dbus_message_iter_append_basic(&subargs, DBUS_TYPE_STRING, caps + i))
+         return 1;
+
+   if (!dbus_message_iter_close_container(&args, &subargs) ||
          !dbus_connection_send(dbus_conn, reply, &serial))
    {
       return false;
