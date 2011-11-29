@@ -402,7 +402,7 @@ bool notify_GetCapabilities(DBusMessage *msg) {
    char *caps[1] = {"body"}, **ptr = caps;  // workaround (see specs)
    serial++;
 
-   printf("GetCapabilities called!\n");
+   DEBUG("GetCapabilities called!\n");
 
    reply = dbus_message_new_method_return(msg);
    if(!reply)
@@ -432,7 +432,7 @@ bool notify_GetServerInformation(DBusMessage *msg) {
    char* info[4] = {"cow-notify", "cow-notify", "0.1", "1.0"};
    serial++;
 
-   printf("GetServerInfo called!\n");
+   DEBUG("GetServerInfo called!\n");
 
    reply = dbus_message_new_method_return(msg);
 
