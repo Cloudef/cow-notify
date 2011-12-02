@@ -210,7 +210,7 @@ static char *str_replace(const char *s, const char *old, const char *new)
   if( !p )
     return 0;
   while( *s )
-    if( !strncmp(s, old, strlen(old)) )
+    if((*s & 0xc0) != 0x80 && !strncmp(s, old, strlen(old)))
     {
       p  -= (intptr_t)cout;
       cout= realloc(cout, slen += strlen(new)-strlen(old) );
@@ -340,11 +340,11 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
 
    note->expires_after = (time_t)(expires<0?EXPIRE_DEFAULT:expires*EXPIRE_MULT);
    note->closed=0;
-   strncpy( note->appname, appname, 20);
-   strncpy( note->summary, summary, 64);
-   strncpy( note->body,    body, 256);
+   strncpy( note->appname, appname, APP_LEN);
+   strncpy( note->summary, summary, SUMMARY_LEN);
+   strncpy( note->body,    body,    BODY_LEN);
    //_strip_body(note->body);
-   DEBUG("   body stripped to: '%s'\n", note->body);
+   //DEBUG("   body stripped to: '%s'\n", note->body);
 
    if( nid==0 ) {
       if( ptr==NULL ) messages=note;
