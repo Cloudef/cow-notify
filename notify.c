@@ -198,7 +198,7 @@ static void run_file(notification* note)
     char* summary;
     char* body;
     char expireTime[LINE_MAX];
-    char* args[4];
+    char* args[6];
 
     if(fork() != 0)
         return;
@@ -208,15 +208,17 @@ static void run_file(notification* note)
     body = strdup(note->body);
     snprintf(expireTime, LINE_MAX, "%d", (int)note->expires_after ? (int)note->expires_after : (int)EXPIRE_DEFAULT);
 
-    args[0] = strdup(path);
-    args[1] = expireTime;
-    args[2] = summary;
-    args[3] = body;
     if(!(sh = getenv("SHELL"))) sh = "/bin/sh";
+    args[0] = sh;
+    args[1] = strdup(path);
+    args[2] = expireTime;
+    args[3] = summary;
+    args[4] = body;
+    args[5] = NULL;
     execv(sh, args);
     DEBUG("%s \"%s\" \"%s\" \"%s\" \"%s\"\n", sh, args[0], args[1], args[2], args[3]);
 
-    free(args[0]);
+    free(args[1]);
     free(summary);
     free(body);
     /* Exit fork */
