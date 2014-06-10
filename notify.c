@@ -294,6 +294,38 @@ static void run_command( notification *note )
    _exit(0);
 }
 
+static void run_file(const char* path, notification* note)
+{
+    char* sh = NULL;
+    char* summary;
+    char* body;
+    char expireTime[LINE_MAX];
+    char* args[5];
+
+    if(fork() != 0)
+        return;
+
+    setsid();
+    summary = strdup(note->summary);
+    body = strdup(note->body);
+    snprintf(expireTime, LINE_MAX, "%d", (int)note->expires_after ? (int)note->expires_after : (int)EXPIRE_DEFAULT);
+
+    args[0] = strdup("-c");
+    args[1] = strdup(path);
+    args[2] = expireTime;
+    args[3] = summary;
+    args[4] = body;
+    if(!(sh = getenv("SHELL"))) sh = "/bin/sh";
+    execv(sh, args);
+
+    free(args[0]);
+    free(args[1]);
+    free(summary);
+    free(body);
+    /* Exit fork */
+    _exit(0);
+}
+
 // Notify
 bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
