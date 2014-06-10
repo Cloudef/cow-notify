@@ -22,15 +22,14 @@ bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg);
 bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg);
 bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned int reason);
 
-// Command from file
-static char command[LINE_MAX];
+// Path to file
+static char path[PATH_MAX];
 
-static void read_command(void)
+static void get_config_path(void)
 {
    const char* config = getenv("XDG_CONFIG_HOME");
-   char filename[PATH_MAX];
    if(config != NULL)
-      snprintf( filename, PATH_MAX, "%s/%s/%s", config, CFG_DIR, CFG_FIL );
+      snprintf( path, PATH_MAX, "%s/%s/%s", config, CFG_DIR, CFG_FIL );
    else
    {
       config = getenv("HOME");
@@ -39,17 +38,8 @@ static void read_command(void)
          struct passwd *pw = getpwuid(getuid());
          config = pw->pw_dir;
       }
-      snprintf( filename, PATH_MAX, "%s/.config/%s/%s", config, CFG_DIR, CFG_FIL );
+      snprintf( path, PATH_MAX, "%s/.config/%s/%s", config, CFG_DIR, CFG_FIL );
    }
-
-   FILE* fp = fopen(filename, "r");
-   if(fp != NULL)
-   {
-      fgets( command, LINE_MAX, fp );
-      fclose(fp);
-   }
-   else
-      sprintf( command, DEFAULT_CMD );
 }
 
 DBusConnection* notify_init(bool const debug_enabled) {
@@ -69,7 +59,7 @@ DBusConnection* notify_init(bool const debug_enabled) {
 
    DEBUGGING=debug_enabled;
 
-   read_command();
+   get_config_path();
 
    dbus_error_free(&dbus_err);
    return dbus;
@@ -202,99 +192,7 @@ void _strip_body(char *text) {
    text[i]=0;
 }
 
-/* precondition: s!=0, old!=0, new!=0 */
-static char *str_replace(const char *s, const char *old, const char *new)
-{
-  size_t slen = strlen(s)+1;
-  char *cout=0, *p=0, *tmp=NULL; cout=malloc(slen); p=cout;
-  if( !p )
-    return 0;
-  while( *s )
-    if((*s & 0xc0) != 0x80 && !strncmp(s, old, strlen(old)))
-    {
-      p  -= (intptr_t)cout;
-      cout= realloc(cout, slen += strlen(new)-strlen(old) );
-      tmp = strcpy(p=cout+(intptr_t)p, new);
-      p  += strlen(tmp);
-      s  += strlen(old);
-    }
-    else
-     *p++=*s++;
-
-  *p=0;
-  return cout;
-}
-
-static char* escape_single_quote( char *string )
-{
-   char *tmp;
-   if(!string)
-      return string;
-
-   tmp = str_replace( string, "'", "'\\''" );
-   if(tmp)
-   {
-      free(string);
-      string = tmp;
-   }
-
-   return string;
-}
-
-static void run_command( notification *note )
-{
-   char *sh = NULL;
-   char *tmp = NULL, *parsed = NULL;
-   char *summary;
-   char *body;
-
-   /* fork here */
-   if(fork() != 0)
-      return;
-
-   setsid();
-   summary = escape_single_quote( strdup(note->summary) );
-   body = escape_single_quote( strdup(note->body) );
-
-   tmp = str_replace( command, "[summary]", summary );
-   if(!tmp)
-      parsed = str_replace( command, "[body]", body );
-   else
-   {
-      parsed = str_replace( tmp, "[body]", body );
-      if(parsed)
-         free(tmp);
-      else
-         parsed = tmp;
-   }
-   free(summary);
-   free(body);
-
-   if(parsed)
-   {
-      char expireTime[LINE_MAX];
-      sprintf(expireTime, "%d", (int)note->expires_after ? (int)note->expires_after : (int)EXPIRE_DEFAULT);
-      tmp = str_replace( parsed, "[expire]", expireTime );
-      if(tmp)
-      {
-         free(parsed);
-         parsed = tmp;
-      }
-   }
-
-   if(!parsed)
-      parsed = strdup(command);
-
-   DEBUG(parsed);
-   if(!(sh = getenv("SHELL"))) sh = "/bin/sh";
-   execlp(sh, sh, "-c", parsed, (char*)NULL);
-   free(parsed);
-
-   /* exit fork */
-   _exit(0);
-}
-
-static void run_file(const char* path, notification* note)
+static void run_file(notification* note)
 {
     char* sh = NULL;
     char* summary;
@@ -386,7 +284,7 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
       }
    }
 
-   run_command( note );
+   run_file( note );
    reply = dbus_message_new_method_return(msg);
 
    dbus_message_iter_init_append(reply, &args);
