@@ -214,6 +214,7 @@ static void run_file(notification* note)
     args[3] = body;
     if(!(sh = getenv("SHELL"))) sh = "/bin/sh";
     execv(sh, args);
+    DEBUG("%s \"%s\" \"%s\" \"%s\" \"%s\"\n", sh, args[0], args[1], args[2], args[3]);
 
     free(args[0]);
     free(summary);
