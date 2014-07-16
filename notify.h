@@ -5,26 +5,28 @@
    #include <limits.h>
 #endif
 
-// default message delay in milliseconds
+/* default message delay in milliseconds */
 #define EXPIRE_DEFAULT  5000
 
-// multiply requested delay by this
-// (slow it down since only one line)
+/* multiply requested delay by this
+ * (slow it down since only one line)
+ */
 #define EXPIRE_MULT     2
 
-// default command
+/* default command */
 #define DEFAULT_CMD     "xsetroot -name '[summary] ~ [body]'"
 
-// config dir
+/* config dir */
 #define CFG_DIR         "cow-notify"
 
-// config file
+/* config file */
 #define CFG_FIL         "config"
 
-// notification maximum text lengths
-// might want to increase these, if causes problems.
-//
-// thought won't have problems with LINE_MAX
+/* notification maximum text lengths
+ * might want to increase these, if causes problems.
+ *
+ * thought won't have problems with LINE_MAX
+ */
 #ifdef __linux__
    #define APP_LEN         256
    #define SUMMARY_LEN     LINE_MAX
@@ -47,14 +49,14 @@ typedef struct _notification {
    struct _notification *next;
 } notification;
 
-// initialize notifications
+/* initialize notifications */
 DBusConnection* notify_init(bool const debug_enabled);
 
-// returns the first current notification into status (number of total messages in n)
+/* returns the first current notification into status (number of total messages in n) */
 notification* notify_get_message(DBusConnection *dbus, int *n);
 
-// calls the respective notify handler based on the message received
+/* calls the respective notify handler based on the message received */
 DBusHandlerResult notify_handle(DBusConnection *dbus, DBusMessage *msg, void *user_data);
 
-// check the dbus for notifications (1=something happened, 0=nothing)
+/* check the dbus for notifications (1=something happened, 0=nothing) */
 bool notify_check(DBusConnection *dbus);

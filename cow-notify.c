@@ -5,12 +5,9 @@
 */
 
 #include <signal.h>
-#include <string.h>
-#include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
-#include <X11/Xlib.h>
+#include <time.h>
 
 #include "notify.h"
 
