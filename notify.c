@@ -22,7 +22,7 @@ bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg);
 bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg);
 bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned int reason);
 
-// Path to file
+/* Path to file */
 static char path[PATH_MAX];
 
 static void get_config_path(void)
@@ -65,7 +65,7 @@ DBusConnection* notify_init(bool const debug_enabled) {
    return dbus;
 }
 
-// returns the first current notification or NULL ( and if n is supplied, number of total messages)
+/* returns the first current notification or NULL ( and if n is supplied, number of total messages) */
 notification *notify_get_message(DBusConnection *dbus, int *n) {
    notification *ptr;
    int temp=0;
@@ -74,7 +74,7 @@ notification *notify_get_message(DBusConnection *dbus, int *n) {
 
    *n=0;
    if( messages != NULL ) {
-      // check/remove expired messages
+      /* check/remove expired messages */
       while( messages!=NULL && messages->expires_after!=0 &&
             (messages->started_at + messages->expires_after) < time(NULL) )
       {
@@ -107,11 +107,11 @@ DBusHandlerResult notify_handle(DBusConnection *dbus, DBusMessage *msg, void *us
 }
 
 
-// check the dbus for notifications (1=something happened, 0=nothing)
+/* check the dbus for notifications (1=something happened, 0=nothing) */
 bool notify_check(DBusConnection *dbus) {
    DBusMessage* msg;
 
-   // non blocking read of the next available message
+   /* non blocking read of the next available message */
    dbus_connection_read_write(dbus, 0);
    msg = dbus_connection_pop_message(dbus);
 
@@ -124,27 +124,28 @@ bool notify_check(DBusConnection *dbus) {
    return false;
 }
 
-// to support libnotify events, we must implement:
-//
-// Methods:
-//   org.freedesktop.Notifications.Notify (STRING app_name, UINT32 replaces_id, app_icon (ignored), STRING summary, STRING body, actions (ignored), hints (ignored), INT32 expire_timeout)
-//     replaces_id = previous notification to replace
-//     expire_timeout==0 for no expiration, -1 for default expiration
-//     returns notification id (replaces_id if given)
-//
-//   org.freedesktop.Notifications.GetCapabilities
-//     returns caps[1] = "body" (doesnt support any fancy features)
-//
-//   org.freedesktop.Notifications.GetServerInformation
-//     returns "dwmstatus", "suckless", "0.1"
-//
-//   org.freedesktop.Notifications.CloseNotification (nid)
-//     forcefully hide and remove notification
-//     emits NotificationClosed signal when done
-//
-// Signal:
-//   org.freedesktop.Notifications.NotificationClosed -> (nid, reason )
-//     whenever notification is closed(reason=3) or expires(reason=1)
+/* to support libnotify events, we must implement:
+ *
+ * Methods:
+ *   org.freedesktop.Notifications.Notify (STRING app_name, UINT32 replaces_id, app_icon (ignored), STRING summary, STRING body, actions (ignored), hints (ignored), INT32 expire_timeout)
+ *     replaces_id = previous notification to replace
+ *     expire_timeout==0 for no expiration, -1 for default expiration
+ *     returns notification id (replaces_id if given)
+ *
+ *   org.freedesktop.Notifications.GetCapabilities
+ *     returns caps[1] = "body" (doesnt support any fancy features)
+ *
+ *   org.freedesktop.Notifications.GetServerInformation
+ *     returns "dwmstatus", "suckless", "0.1"
+ *
+ *   org.freedesktop.Notifications.CloseNotification (nid)
+ *     forcefully hide and remove notification
+ *     emits NotificationClosed signal when done
+ *
+ * Signal:
+ *   org.freedesktop.Notifications.NotificationClosed -> (nid, reason )
+ *     whenever notification is closed(reason=3) or expires(reason=1)
+ */
 
 bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned int reason)
 {
@@ -204,7 +205,7 @@ static void run_file(notification* note)
     _exit(0);
 }
 
-// Notify
+/* Notify */
 bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
@@ -221,23 +222,23 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    dbus_message_iter_next( &args );
    dbus_message_iter_get_basic(&args, &nid);
    dbus_message_iter_next( &args );
-   dbus_message_iter_next( &args );  // skip icon
+   dbus_message_iter_next( &args );  /* skip icon */
    dbus_message_iter_get_basic(&args, &summary);
    dbus_message_iter_next( &args );
    dbus_message_iter_get_basic(&args, &body);
    dbus_message_iter_next( &args );
-   dbus_message_iter_next( &args );  // skip actions
-   dbus_message_iter_next( &args );  // skip hints
+   dbus_message_iter_next( &args );  /* skip actions */
+   dbus_message_iter_next( &args );  /* skip hints */
    dbus_message_iter_get_basic(&args, &expires);
 
    DEBUG("Notify('%s', %u, -, '%s', '%s', -, -, %d)\n",appname, nid, summary, body, expires);
 
-   if( nid!=0 ) { // update existing message
+   if( nid!=0 ) { /* update existing message */
       note = messages;
       if( note!=NULL )
          while( note->nid != nid && note->next!=NULL ) note=note->next;
 
-      if( note==NULL || note->nid!=nid ) { // not found, re-create
+      if( note==NULL || note->nid!=nid ) { /* not found, re-create */
          note = calloc(sizeof(notification), 1);
          note->nid=nid;
          nid=0;
@@ -277,7 +278,7 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    return true;
 }
 
-// CloseNotification
+/* CloseNotification */
 bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
@@ -312,7 +313,7 @@ bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg) {
    return true;
 }
 
-// GetCapabilites
+/* GetCapabilites */
 bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
@@ -347,7 +348,7 @@ bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
    return true;
 }
 
-// GetServerInformation
+/* GetServerInformation */
 bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
