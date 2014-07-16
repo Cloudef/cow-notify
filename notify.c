@@ -11,7 +11,7 @@
 #include "notify.h"
 
 #define DEBUG(...) if( DEBUGGING == true) fprintf(stderr, __VA_ARGS__)
-bool DEBUGGING=0;
+static bool DEBUGGING=0;
 
 notification *messages=NULL;
 
@@ -147,7 +147,7 @@ bool notify_check(DBusConnection *dbus) {
  *     whenever notification is closed(reason=3) or expires(reason=1)
  */
 
-bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned int reason)
+static bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned int reason)
 {
    DBusMessageIter args;
    DBusMessage* notify_close_msg;
@@ -206,7 +206,7 @@ static void run_file(notification* note)
 }
 
 /* Notify */
-bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
+static bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    const char *appname;
@@ -256,7 +256,8 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    strncpy( note->body,    body,    BODY_LEN);
 
    if( nid==0 ) {
-      if( ptr==NULL ) messages=note;
+      if( ptr==NULL )
+          messages=note;
       else {
          while( ptr->next != NULL ) ptr=ptr->next;
          ptr->next=note;
@@ -269,9 +270,7 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    dbus_message_iter_init_append(reply, &args);
    if (!dbus_message_iter_append_basic(&args, DBUS_TYPE_UINT32, &(note->nid)) ||
          !dbus_connection_send(dbus, reply, NULL))
-   {
       return false;
-   }
    dbus_message_unref(reply);
 
    DEBUG("   Notification %d created.\n", note->nid);
@@ -279,7 +278,7 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
 }
 
 /* CloseNotification */
-bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg) {
+static bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    dbus_uint32_t nid=0;
@@ -294,9 +293,8 @@ bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg) {
       ptr->expires_after=(time(NULL) - ptr->started_at)*EXPIRE_MULT;
       ptr->closed=1;
    } else if( ptr!=NULL ) {
-      while( ptr->next != NULL && ptr->next->nid != nid ) {
+      while( ptr->next != NULL && ptr->next->nid != nid )
          ptr=ptr->next;
-      }
 
       if( ptr->next != NULL && ptr->next->nid==nid ) {
          ptr = ptr->next;
@@ -314,7 +312,7 @@ bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg) {
 }
 
 /* GetCapabilites */
-bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
+static bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
    DBusMessageIter subargs;
@@ -325,23 +323,20 @@ bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
 
    reply = dbus_message_new_method_return(msg);
    if(!reply)
-   {
       return false;
-   }
 
    dbus_message_iter_init_append(reply, &args);
    if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, DBUS_TYPE_STRING_AS_STRING, &subargs ))
       return 1;
 
-   for (int i = 0; i < sizeof(caps)/sizeof(caps[0]); ++i)
+   for (int i = 0; i < sizeof(caps)/sizeof(caps[0]); ++i) {
       if (!dbus_message_iter_append_basic(&subargs, DBUS_TYPE_STRING, caps + i))
          return 1;
+   }
 
    if (!dbus_message_iter_close_container(&args, &subargs) ||
          !dbus_connection_send(dbus, reply, NULL))
-   {
       return false;
-   }
 
    dbus_message_unref(reply);
 
@@ -349,7 +344,7 @@ bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
 }
 
 /* GetServerInformation */
-bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg) {
+static bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessage* reply;
    DBusMessageIter args;
 
@@ -365,10 +360,10 @@ bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg) {
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[2]) ||
          !dbus_message_iter_append_basic(&args, DBUS_TYPE_STRING, &info[3]) ||
          !dbus_connection_send(dbus, reply, NULL))
-   {
       return false;
-   }
 
    dbus_message_unref(reply);
    return true;
 }
+
+
