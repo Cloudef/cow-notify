@@ -16,11 +16,11 @@ static bool DEBUGGING = 0;
 static notification *messages = NULL;
 
 static dbus_uint32_t curNid = 1;
-bool notify_Notify(DBusConnection *dbus, DBusMessage *msg);
-bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg);
-bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg);
-bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg);
-bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned int reason);
+static bool notify_Notify(DBusConnection *dbus, DBusMessage *msg);
+static bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg);
+static bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg);
+static bool notify_CloseNotification(DBusConnection *dbus, DBusMessage *msg);
+static bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned int reason);
 
 /* Path to file */
 static char path[PATH_MAX];
@@ -80,7 +80,7 @@ notification *notify_get_message(DBusConnection *dbus, int *n) {
             (messages->started_at + messages->expires_after) < time(NULL) )
       {
          notification *t = messages->next;
-         notify_NotificationClosed(dbus, messages->nid, 1 + messages->closed*2);
+         notify_NotificationClosed(dbus, messages->nid, 1 + (unsigned int)messages->closed*2);
          free(messages);
          messages = t;
       }
@@ -175,7 +175,7 @@ static bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, un
 
 static void run_file(notification* note)
 {
-    char* sh = NULL;
+    const char* sh = NULL;
     char* summary;
     char* body;
     char expireTime[LINE_MAX];
@@ -190,7 +190,7 @@ static void run_file(notification* note)
     snprintf(expireTime, LINE_MAX, "%d", (int)note->expires_after ? (int)note->expires_after : (int)EXPIRE_DEFAULT);
 
     if(!(sh = getenv("SHELL"))) sh = "/bin/sh";
-    args[0] = sh;
+    args[0] = strdup(sh);
     args[1] = strdup(path);
     args[2] = expireTime;
     args[3] = summary;
@@ -199,6 +199,7 @@ static void run_file(notification* note)
     execv(sh, args);
     DEBUG("%s \"%s\" \"%s\" \"%s\" \"%s\"\n", sh, args[0], args[1], args[2], args[3]);
 
+    free(args[0]);
     free(args[1]);
     free(summary);
     free(body);
@@ -318,7 +319,7 @@ static bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
    DBusMessageIter args;
    DBusMessageIter subargs;
 
-   char *caps[] = {"body"};
+   const char *caps[] = {"body"};
 
    DEBUG("GetCapabilities called!\n");
 
@@ -330,7 +331,7 @@ static bool notify_GetCapabilities(DBusConnection *dbus, DBusMessage *msg) {
    if (!dbus_message_iter_open_container(&args, DBUS_TYPE_ARRAY, DBUS_TYPE_STRING_AS_STRING, &subargs ))
       return 1;
 
-   for (int i = 0; i < sizeof(caps)/sizeof(caps[0]); ++i) {
+   for (unsigned int i = 0; i < sizeof(caps)/sizeof(caps[0]); ++i) {
       if (!dbus_message_iter_append_basic(&subargs, DBUS_TYPE_STRING, caps + i))
          return 1;
    }
@@ -349,7 +350,7 @@ static bool notify_GetServerInformation(DBusConnection *dbus, DBusMessage *msg) 
    DBusMessage* reply;
    DBusMessageIter args;
 
-   char* info[4] = {"cow-notify", "cow-notify", "0.1", "1.0"};
+   const char* info[4] = {"cow-notify", "cow-notify", "0.1", "1.0"};
 
    DEBUG("GetServerInfo called!\n");
 
