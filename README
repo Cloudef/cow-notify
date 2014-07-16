@@ -1,6 +1,6 @@
 cow-notify, fork from dwmstatus
 
-Notification daemon that runs on background and executes configured script (if there is no script ??).
+Notification daemon that runs on background and executes configured script.
 
 The script get as arguments the time of expiration of the notification, its summary and its content.
 
