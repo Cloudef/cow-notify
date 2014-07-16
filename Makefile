@@ -1,5 +1,7 @@
 PREFIX := /usr
-CFLAGS := -std=c99 -D_GNU_SOURCE -Wall -O3 -s
+WARNGS := -Wall -Wextra -pedantic -Wwrite-strings -Wpointer-arith \
+	-Wcast-qual -Wcast-align -Wconversion -Wshadow -Wredundant-decls
+CFLAGS := ${WARNGS} -std=c99 -D_GNU_SOURCE -O3 -s
 TARGET := cow-notify
 
 all:
