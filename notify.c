@@ -171,27 +171,6 @@ bool notify_NotificationClosed(DBusConnection *dbus, unsigned int nid, unsigned 
    return true;
 }
 
-// since most libnotify clients dont respect my capabilities, this
-// simple helper will strip html tags and endlines from notifications
-// modifies string in place
-// strips &amp; - stuff instead of replacing with proper chars
-void _strip_body(char *text) {
-   int i=0, j=0;
-   bool in_tag = false, in_amp = false;
-
-   while( text[j] ) {
-      if( text[j]=='\n' ) text[i++]=' ';
-      else if( text[j]=='\t' ) text[i++]=' ';
-      else if( text[j]=='<' ) in_tag = true;
-      else if( text[j]=='>' && in_tag == true) in_tag = false;
-      else if( text[j]=='&' ) in_amp = true;
-      else if( text[j]==';' && in_amp == true) { in_amp = false; text[i++]=' '; }
-      else if( in_tag == false && in_amp == false ) text[i++]=text[j];
-      j++;
-   }
-   text[i]=0;
-}
-
 static void run_file(notification* note)
 {
     char* sh = NULL;
@@ -274,8 +253,6 @@ bool notify_Notify(DBusConnection *dbus, DBusMessage *msg) {
    strncpy( note->appname, appname, APP_LEN);
    strncpy( note->summary, summary, SUMMARY_LEN);
    strncpy( note->body,    body,    BODY_LEN);
-   //_strip_body(note->body);
-   //DEBUG("   body stripped to: '%s'\n", note->body);
 
    if( nid==0 ) {
       if( ptr==NULL ) messages=note;
